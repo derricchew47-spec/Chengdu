@@ -128,7 +128,7 @@ def asset_data_uri(relative_path: str, mime_type: str) -> str:
     return f"data:{mime_type};base64,{base64.b64encode(data).decode('ascii')}"
 
 
-def build_payload() -> str:
+def build_payload(server_food=None, initial_page: str = "home") -> str:
     """Build the browser payload with the same keys and ordering as the source."""
     from food import FOODS
     from home import DAYS
@@ -151,6 +151,8 @@ def build_payload() -> str:
         "route_traveler_panda": asset_data_uri("panda/route-traveler.webp", "image/webp"),
         "card_art": card_art,
         "covers": {},
+        "server_food": server_food,
+        "initial_page": initial_page if initial_page in {"home", "food", "expenses"} else "home",
     }
     return json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
 
@@ -421,37 +423,62 @@ let foodRequestSeq=0,foodRequestKey='';
 const LOCATION_MAX_AGE=12*60*1000;
 const locationFresh=()=>!!(userLocation&&locationTimestamp&&Date.now()-locationTimestamp<=LOCATION_MAX_AGE);
 function expireLocationIfNeeded(){if(userLocation&&!locationFresh()){userLocation=null;locationTimestamp=0;geoStatus='idle';foodPois=[];selectedFood=null}}
+function requestServerFood(force=false){
+  if(!userLocation)return;
+  foodLoading=true;foodError='';
+  if(currentPage==='food')renderFood();
+
+  try{
+    const u=new URL(window.parent.location.href);
+    u.searchParams.set('food_lat',Number(userLocation.lat).toFixed(4));
+    u.searchParams.set('food_lon',Number(userLocation.lon).toFixed(4));
+    u.searchParams.set('food_r',String(foodRadius));
+    u.searchParams.set('food_cat',String(foodCategory||'all'));
+    if(force)u.searchParams.set('food_refresh',String(Date.now()));
+    else u.searchParams.delete('food_refresh');
+    window.parent.location.assign(u.toString())
+  }catch(e){
+    foodLoading=false;foodError='failed';
+    if(currentPage==='food')renderFood()
+  }
+}
 function requestLocation(source='food'){
   const redraw=()=>{if(currentPage==='food')renderFood()};
   const useCurrent=()=>{
-    if(userLocation){geoStatus='ready';redraw();if(currentPage==='food'&&!foodPois.length&&!foodLoading)loadFoodPois()}
+    if(userLocation){
+      geoStatus='ready';redraw();
+      if(currentPage==='food'&&!foodPois.length&&!foodLoading)requestServerFood(false)
+    }
   };
-  // Use a recent cached location immediately on mobile, then refresh only when stale.
   if(locationFresh()){useCurrent();return}
   if(!window.isSecureContext){geoStatus='insecure';redraw();return}
   if(!navigator.geolocation){geoStatus='unavailable';redraw();return}
   geoStatus='pending';redraw();
 
-  const acceptPosition=async p=>{
+  const acceptPosition=p=>{
     locationTimestamp=Date.now();
-    userLocation={lat:p.coords.latitude,lon:p.coords.longitude,accuracy:p.coords.accuracy,ts:locationTimestamp};
+    userLocation={
+      lat:p.coords.latitude,
+      lon:p.coords.longitude,
+      accuracy:p.coords.accuracy,
+      ts:locationTimestamp
+    };
     geoStatus='ready';
     store.set('chengduLastLocation',JSON.stringify(userLocation));
-    if(currentPage==='food')await loadFoodPois(true)
+    if(source==='amap'){finishAmapOpen();return}
+    requestServerFood(true)
   };
   const failFinal=e=>{
-    // Do not destroy a previously usable location/results on refresh failure.
+    if(source==='amap')cancelAmapOpen();
     if(userLocation){geoStatus='ready';redraw();return}
     geoStatus=e&&e.code===1?'denied':'unavailable';
     redraw()
   };
 
-  // First attempt: low-power, allow recent device cache, mobile-friendly timeout.
   navigator.geolocation.getCurrentPosition(
     acceptPosition,
     firstErr=>{
       if(firstErr&&firstErr.code===1){failFinal(firstErr);return}
-      // One fallback only: ask for higher accuracy if the normal request timed out/failed.
       navigator.geolocation.getCurrentPosition(
         acceptPosition,
         failFinal,
@@ -461,47 +488,13 @@ function requestLocation(source='food'){
     {enableHighAccuracy:false,timeout:20000,maximumAge:10*60*1000}
   )
 }
-async function fetchOverpass(query,key){
-  const fresh=cacheRead(key);
-  if(fresh)return{data:fresh,cached:false,stale:false};
-
-  const stale=cacheAny(key);
-  const wait=Math.max(0,1100-(Date.now()-lastOverpassAt));
-  if(wait)await sleep(wait);
-  lastOverpassAt=Date.now();
-
-  const endpoints=[
-    'https://overpass-api.de/api/interpreter',
-    'https://overpass.kumi.systems/api/interpreter',
-    'https://overpass.nchc.org.tw/api/interpreter',
-    'https://overpass.private.coffee/api/interpreter'
-  ];
-
-  for(const url of endpoints){
-    let timer;
-    try{
-      const c=new AbortController();
-      timer=setTimeout(()=>c.abort(),22000);
-      const r=await fetch(url,{
-        method:'POST',
-        headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
-        body:'data='+encodeURIComponent(query),
-        signal:c.signal,
-        cache:'no-store'
-      });
-      clearTimeout(timer);
-      if(!r.ok)throw Error(String(r.status));
-      const j=await r.json();
-      const data=j.elements||[];
-      cacheWrite(key,data);
-      return{data,cached:false,stale:false}
-    }catch(e){
-      if(timer)clearTimeout(timer);
-    }
-  }
-
-  if(stale)return{data:stale,cached:true,stale:true};
-  throw Error('overpass')
+function cleanFoodQueryParams(){
+  if(!DATA.server_food)return;
+  try{
+    const u=new URL(window.parent.location.href);
+    ['food_lat','food_lon','food_r','food_cat','food_refresh'].forEach(k=>u.searchParams.delete(k));
+    window.parent.history.replaceState({},'',u.toString())
+  }catch(e){}
 }
 function osmPhoto(t){if(t.image&&/^https?:/i.test(t.image))return t.image;if(t.wikimedia_commons){const f=t.wikimedia_commons.replace(/^File:/,'');return`https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(f)}?width=800`}return''}
 function osmName(t){return t[lang==='zh'?'name:zh':'name:en']||t.name||t['name:zh']||t['name:en']||L('unknown')}
@@ -535,7 +528,22 @@ function settleAtTop(){scrollHome();requestAnimationFrame(()=>{scrollHome();requ
 BOOT_AND_DOCUMENT_END = r'''/* ───── boot ───── */
 ledger=loadLocalLedger();
 try{const savedLoc=JSON.parse(store.get('chengduLastLocation')||'null');if(savedLoc&&Number.isFinite(savedLoc.lat)&&Number.isFinite(savedLoc.lon)&&Number.isFinite(savedLoc.ts)&&Date.now()-savedLoc.ts<=LOCATION_MAX_AGE){userLocation=savedLoc;locationTimestamp=savedLoc.ts;geoStatus='ready'}}catch(e){}
-prepareLanding();nav();renderHome();renderExpenses();showPage('home');fitFrame();loadWeather();loadFx();if(CLOUD)syncLedger();
+if(DATA.server_food){
+  const sf=DATA.server_food;
+  if(Number.isFinite(+sf.lat)&&Number.isFinite(+sf.lon)){
+    locationTimestamp=Date.now();
+    userLocation={lat:+sf.lat,lon:+sf.lon,accuracy:null,ts:locationTimestamp};
+    geoStatus='ready';
+    store.set('chengduLastLocation',JSON.stringify(userLocation));
+  }
+  if(Number.isFinite(+sf.radius))foodRadius=+sf.radius;
+  if(sf.category)foodCategory=sf.category;
+  foodPois=normalizePois(sf.elements||[],'food').filter(p=>p.distance<=foodRadius*1000);
+  foodError=sf.status==='stale'?'cached':(sf.status==='failed'?'failed':'');
+  foodLoading=false;
+  cleanFoodQueryParams();
+}
+prepareLanding();nav();renderHome();renderExpenses();showPage(DATA.initial_page||'home');fitFrame();loadWeather();loadFx();if(CLOUD)syncLedger();
 window.addEventListener('resize',()=>{fitFrame();sizeSwipe()});
 window.addEventListener('online',()=>{if(CLOUD)syncLedger()});
 setInterval(()=>{const g=$('#greet'),ge=$('#greetEn');if(g)g.textContent=greeting();if(ge)ge.textContent=greetingEN();if(currentPage==='home'&&swipeFlipped){const i=swipeDayIdx;renderSwipeStack(i);flipTopCard(true)}},60000);

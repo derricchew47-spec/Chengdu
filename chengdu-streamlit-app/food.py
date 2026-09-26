@@ -28,35 +28,7 @@ function foodQueryText(){
 }
 async function loadFoodPois(force=false){
   if(!userLocation)return;
-  const key=`chengduPoi:food:${locCache()}:${foodRadius}:${foodCategory}`;
-  if(foodLoading&&foodRequestKey===key&&!force)return;
-
-  const seq=++foodRequestSeq;
-  foodRequestKey=key;
-  const previous=foodPois.slice();
-  foodLoading=true;
-  foodError='';
-  if(currentPage==='food')renderFood();
-
-  if(force)store.set(key,'');
-
-  try{
-    const r=await fetchOverpass(foodQueryText(),key);
-    if(seq!==foodRequestSeq)return;
-    const next=normalizePois(r.data,'food').filter(p=>p.distance<=foodRadius*1000);
-    foodPois=next;
-    foodError=r.stale?'cached':'';
-  }catch(e){
-    if(seq!==foodRequestSeq)return;
-    // Preserve any previously rendered data. Failure is not the same as zero results.
-    foodPois=previous;
-    foodError='failed';
-  }finally{
-    if(seq===foodRequestSeq){
-      foodLoading=false;
-      if(currentPage==='food')renderFood()
-    }
-  }
+  requestServerFood(force)
 }
 function selectFoodCategory(k){foodCategory=k;userLocation?loadFoodPois():renderFood()}
 function setFoodRadius(r){foodRadius=r;userLocation?loadFoodPois():renderFood()}
