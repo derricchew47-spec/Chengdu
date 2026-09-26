@@ -417,26 +417,91 @@ function cacheRead(k,maxAge=30*60*1000){try{const x=JSON.parse(store.get(k)||'nu
 function cacheAny(k){try{const x=JSON.parse(store.get(k)||'null');return x?x.data:null}catch(e){return null}}
 function cacheWrite(k,data){store.set(k,JSON.stringify({ts:Date.now(),data}))}
 function locCache(){return userLocation?`${Math.round(userLocation.lat*500)}:${Math.round(userLocation.lon*500)}`:'none'}
+let foodRequestSeq=0,foodRequestKey='';
 const LOCATION_MAX_AGE=12*60*1000;
 const locationFresh=()=>!!(userLocation&&locationTimestamp&&Date.now()-locationTimestamp<=LOCATION_MAX_AGE);
 function expireLocationIfNeeded(){if(userLocation&&!locationFresh()){userLocation=null;locationTimestamp=0;geoStatus='idle';foodPois=[];selectedFood=null}}
 function requestLocation(source='food'){
   const redraw=()=>{if(currentPage==='food')renderFood()};
-  if(!window.isSecureContext){geoStatus='insecure';cancelAmapOpen();redraw();return}
-  if(!navigator.geolocation){geoStatus='unavailable';cancelAmapOpen();redraw();return}
+  const useCurrent=()=>{
+    if(userLocation){geoStatus='ready';redraw();if(currentPage==='food'&&!foodPois.length&&!foodLoading)loadFoodPois()}
+  };
+  // Use a recent cached location immediately on mobile, then refresh only when stale.
+  if(locationFresh()){useCurrent();return}
+  if(!window.isSecureContext){geoStatus='insecure';redraw();return}
+  if(!navigator.geolocation){geoStatus='unavailable';redraw();return}
   geoStatus='pending';redraw();
-  navigator.geolocation.getCurrentPosition(async p=>{
-    locationTimestamp=Date.now();userLocation={lat:p.coords.latitude,lon:p.coords.longitude,accuracy:p.coords.accuracy,ts:locationTimestamp};geoStatus='ready';store.set('chengduLastLocation',JSON.stringify(userLocation));
-    if(source==='amap')finishAmapOpen();
+
+  const acceptPosition=async p=>{
+    locationTimestamp=Date.now();
+    userLocation={lat:p.coords.latitude,lon:p.coords.longitude,accuracy:p.coords.accuracy,ts:locationTimestamp};
+    geoStatus='ready';
+    store.set('chengduLastLocation',JSON.stringify(userLocation));
     if(currentPage==='food')await loadFoodPois(true)
-  },e=>{geoStatus=e&&e.code===1?'denied':'unavailable';cancelAmapOpen();redraw()},{enableHighAccuracy:false,timeout:10000,maximumAge:0});
+  };
+  const failFinal=e=>{
+    // Do not destroy a previously usable location/results on refresh failure.
+    if(userLocation){geoStatus='ready';redraw();return}
+    geoStatus=e&&e.code===1?'denied':'unavailable';
+    redraw()
+  };
+
+  // First attempt: low-power, allow recent device cache, mobile-friendly timeout.
+  navigator.geolocation.getCurrentPosition(
+    acceptPosition,
+    firstErr=>{
+      if(firstErr&&firstErr.code===1){failFinal(firstErr);return}
+      // One fallback only: ask for higher accuracy if the normal request timed out/failed.
+      navigator.geolocation.getCurrentPosition(
+        acceptPosition,
+        failFinal,
+        {enableHighAccuracy:true,timeout:15000,maximumAge:5*60*1000}
+      )
+    },
+    {enableHighAccuracy:false,timeout:20000,maximumAge:10*60*1000}
+  )
 }
 async function fetchOverpass(query,key){
-  const fresh=cacheRead(key);if(fresh)return{data:fresh,cached:false};
-  const wait=Math.max(0,1300-(Date.now()-lastOverpassAt));if(wait)await sleep(wait);lastOverpassAt=Date.now();
-  const endpoints=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
-  for(const url of endpoints){try{const c=new AbortController(),timer=setTimeout(()=>c.abort(),13000);const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:'data='+encodeURIComponent(query),signal:c.signal});clearTimeout(timer);if(!r.ok)throw Error(String(r.status));const j=await r.json();cacheWrite(key,j.elements||[]);return{data:j.elements||[],cached:false}}catch(e){}}
-  const stale=cacheAny(key);if(stale)return{data:stale,cached:true};throw Error('overpass')
+  const fresh=cacheRead(key);
+  if(fresh)return{data:fresh,cached:false,stale:false};
+
+  const stale=cacheAny(key);
+  const wait=Math.max(0,1100-(Date.now()-lastOverpassAt));
+  if(wait)await sleep(wait);
+  lastOverpassAt=Date.now();
+
+  const endpoints=[
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter',
+    'https://overpass.nchc.org.tw/api/interpreter',
+    'https://overpass.private.coffee/api/interpreter'
+  ];
+
+  for(const url of endpoints){
+    let timer;
+    try{
+      const c=new AbortController();
+      timer=setTimeout(()=>c.abort(),22000);
+      const r=await fetch(url,{
+        method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
+        body:'data='+encodeURIComponent(query),
+        signal:c.signal,
+        cache:'no-store'
+      });
+      clearTimeout(timer);
+      if(!r.ok)throw Error(String(r.status));
+      const j=await r.json();
+      const data=j.elements||[];
+      cacheWrite(key,data);
+      return{data,cached:false,stale:false}
+    }catch(e){
+      if(timer)clearTimeout(timer);
+    }
+  }
+
+  if(stale)return{data:stale,cached:true,stale:true};
+  throw Error('overpass')
 }
 function osmPhoto(t){if(t.image&&/^https?:/i.test(t.image))return t.image;if(t.wikimedia_commons){const f=t.wikimedia_commons.replace(/^File:/,'');return`https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(f)}?width=800`}return''}
 function osmName(t){return t[lang==='zh'?'name:zh':'name:en']||t.name||t['name:zh']||t['name:en']||L('unknown')}

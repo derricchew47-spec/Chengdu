@@ -28,15 +28,35 @@ function foodQueryText(){
 }
 async function loadFoodPois(force=false){
   if(!userLocation)return;
-  foodLoading=true;foodError='';renderFood();
   const key=`chengduPoi:food:${locCache()}:${foodRadius}:${foodCategory}`;
+  if(foodLoading&&foodRequestKey===key&&!force)return;
+
+  const seq=++foodRequestSeq;
+  foodRequestKey=key;
+  const previous=foodPois.slice();
+  foodLoading=true;
+  foodError='';
+  if(currentPage==='food')renderFood();
+
   if(force)store.set(key,'');
+
   try{
     const r=await fetchOverpass(foodQueryText(),key);
-    foodPois=normalizePois(r.data,'food').filter(p=>p.distance<=foodRadius*1000);
-    foodError=r.cached?'cached':''
-  }catch(e){foodPois=[];foodError='failed'}
-  foodLoading=false;renderFood()
+    if(seq!==foodRequestSeq)return;
+    const next=normalizePois(r.data,'food').filter(p=>p.distance<=foodRadius*1000);
+    foodPois=next;
+    foodError=r.stale?'cached':'';
+  }catch(e){
+    if(seq!==foodRequestSeq)return;
+    // Preserve any previously rendered data. Failure is not the same as zero results.
+    foodPois=previous;
+    foodError='failed';
+  }finally{
+    if(seq===foodRequestSeq){
+      foodLoading=false;
+      if(currentPage==='food')renderFood()
+    }
+  }
 }
 function selectFoodCategory(k){foodCategory=k;userLocation?loadFoodPois():renderFood()}
 function setFoodRadius(r){foodRadius=r;userLocation?loadFoodPois():renderFood()}
@@ -135,7 +155,7 @@ function renderFood(){
   `${foodError?`<div class="local-note">${L(foodError==='cached'?'cached':'service_down')} ${foodError==='failed'?`<button class="mini-btn" onclick="loadFoodPois(true)">${L('retry')}</button> <a class="mini-btn" target="_blank" rel="noopener" href="${amapNearbyUrl('food')}">${L('amap_nearby')}</a>`:''}</div>`:''}
    ${focus.length?`<section class="food-focus-section"><div class="food-carousel" id="foodCarousel">${focus.map(foodCarouselCard).join('')}</div><div class="food-carousel-dots">${focus.map((_,i)=>`<span class="${i===0?'active':''}"></span>`).join('')}</div></section>`:''}
    ${more.length?`<section class="food-more-section"><div class="food-section-head"><h2>${L('more_recommendations')}</h2><span>${L('sorted_by_score')}</span></div><div class="food-more-list">${more.map(foodCompactCard).join('')}</div></section>`:''}
-   ${!shown.length?`<div class="state-card paper-card"><h3>${L('nothing_food')}</h3><p>${L('wider')}</p></div>`:''}
+   ${(!shown.length&&foodError!=='failed')?`<div class="state-card paper-card"><h3>${L('nothing_food')}</h3><p>${L('wider')}</p></div>`:''}
    ${nearbyToolsHTML()}`}`;
   bindFoodCarousel();
   if(currentPage==='food'&&userLocation&&!foodLoading&&!foodPois.length&&!foodError)setTimeout(()=>loadFoodPois(),80)
