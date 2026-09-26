@@ -261,7 +261,7 @@ SCRIPT_CORE = r'''<script>
 const DATA=__DATA__;
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const days=DATA.days;
-let lang='zh', currentPage='home', foodCategory='all', foodRadius=2, swipeDayIdx=0, swipeFlipped=false, wx=null;
+let lang='zh', currentPage='home', foodCategory='all', foodRadius=2, foodPoolRadius=0, swipeDayIdx=0, swipeFlipped=false, wx=null;
 let userLocation=null,locationTimestamp=0,geoStatus='idle',foodPois=[],foodLoading=false,foodError='',selectedFood=null,foodQuery='',foodSearchTimer=null,lastOverpassAt=0;
 let pendingAmapKind='',pendingAmapWindow=null;
 let expenseTab='overview',ledger={members:[],expenses:[],splits:[],settlements:[]},cloudStatus='local',fxRate=null;
@@ -424,7 +424,7 @@ let foodRequestSeq=0,foodRequestKey='';
 const LOCATION_MAX_AGE=12*60*1000;
 const locationFresh=()=>!!(userLocation&&locationTimestamp&&Date.now()-locationTimestamp<=LOCATION_MAX_AGE);
 function expireLocationIfNeeded(){if(userLocation&&!locationFresh()){userLocation=null;locationTimestamp=0;geoStatus='idle';foodPois=[];selectedFood=null}}
-function foodServerUrl(force=false){
+function foodServerUrl(force=false,poolRadius=foodRadius){
   if(!userLocation)return'';
   let base='';
   try{base=window.parent.location.href}catch(e){}
@@ -433,15 +433,15 @@ function foodServerUrl(force=false){
   const u=new URL(base);
   u.searchParams.set('food_lat',Number(userLocation.lat).toFixed(4));
   u.searchParams.set('food_lon',Number(userLocation.lon).toFixed(4));
-  u.searchParams.set('food_r',String(foodRadius));
+  u.searchParams.set('food_r',String(poolRadius));
   u.searchParams.set('food_cat',String(foodCategory||'all'));
   if(force)u.searchParams.set('food_refresh',String(Date.now()));
   else u.searchParams.delete('food_refresh');
   return u.toString()
 }
-function requestServerFood(force=false){
+function requestServerFood(force=false,poolRadius=foodRadius){
   if(!userLocation)return;
-  const href=foodServerUrl(force);
+  const href=foodServerUrl(force,poolRadius);
   if(!href){foodLoading=false;foodError='failed';if(currentPage==='food')renderFood();return}
   foodLoading=true;foodError='';
   if(currentPage==='food')renderFood();
@@ -527,6 +527,8 @@ function showPage(name,rerender=true){
   });
   if(rerender){if(name==='home')sizeSwipe();if(name==='food')renderFood();if(name==='expenses')renderExpenses()}
   settleAtTop();
+  requestAnimationFrame(fitFrame);
+  setTimeout(fitFrame,80);
 }
 function scrollHome(){try{document.scrollingElement.scrollTo({top:0,left:0,behavior:'instant'})}catch(e){}document.documentElement.scrollTop=0;document.body.scrollTop=0;try{window.parent.scrollTo({top:0,left:0,behavior:'instant'})}catch(e){}}
 function settleAtTop(){scrollHome();requestAnimationFrame(()=>{scrollHome();requestAnimationFrame(scrollHome)})}
@@ -543,9 +545,11 @@ if(DATA.server_food){
     geoStatus='ready';
     store.set('chengduLastLocation',JSON.stringify(userLocation));
   }
-  if(Number.isFinite(+sf.radius))foodRadius=+sf.radius;
-  if(sf.category)foodCategory=sf.category;
-  foodPois=normalizePois(sf.elements||[],'food').filter(p=>p.distance<=foodRadius*1000);
+  if(Number.isFinite(+sf.radius))foodPoolRadius=+sf.radius;
+  if(Number.isFinite(+sf.view_radius))foodRadius=+sf.view_radius;
+  else if(Number.isFinite(+sf.radius))foodRadius=+sf.radius;
+  if(sf.view_category)foodCategory=sf.view_category;
+  foodPois=normalizePois(sf.elements||[],'food').filter(p=>p.distance<=foodPoolRadius*1000);
   foodError=sf.status==='stale'?'cached':(sf.status==='failed'?'failed':'');
   foodLoading=false;
   cleanFoodQueryParams();

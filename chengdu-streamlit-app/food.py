@@ -28,10 +28,26 @@ function foodQueryText(){
 }
 async function loadFoodPois(force=false){
   if(!userLocation)return;
-  requestServerFood(force)
+  requestServerFood(force,Math.max(foodRadius,foodPoolRadius||0,2))
 }
-function selectFoodCategory(k){foodCategory=k;userLocation?loadFoodPois():renderFood()}
-function setFoodRadius(r){foodRadius=r;userLocation?loadFoodPois():renderFood()}
+function selectFoodCategory(k){
+  foodCategory=k;
+  renderFood();
+  requestAnimationFrame(fitFrame)
+}
+function setFoodRadius(r){
+  foodRadius=r;
+  if(!userLocation){renderFood();requestAnimationFrame(fitFrame);return}
+  // 500 m / 1 km / 2 km use the already-downloaded pool instantly.
+  // Only the first expansion beyond the current pool (normally 5 km)
+  // needs one server round trip.
+  if(foodPoolRadius>=r){
+    renderFood();
+    requestAnimationFrame(fitFrame);
+    return
+  }
+  requestServerFood(false,r)
+}
 function setFoodSearch(v){foodQuery=v.trim().toLowerCase();clearTimeout(foodSearchTimer);foodSearchTimer=setTimeout(renderFood,180)}
 
 const CUISINE_ALIASES={
@@ -111,8 +127,12 @@ function locationState(source){
   return`<div class="state-card paper-card"><div class="state-icon">${icon('locate','lg')}</div><h3>${L(copy[0])}</h3><p>${L(copy[1])}</p><button class="primary-btn" onclick="requestLocation('${source}')">${L(geoStatus==='idle'?'locate':'retry')}</button></div>`
 }
 function renderFood(){
-  const shown=foodPois.filter(p=>!foodQuery||p.name.toLowerCase().includes(foodQuery));
-  const focus=shown.slice(0,6),more=shown.slice(6,18);
+  const shown=foodPois
+    .filter(p=>p.distance<=foodRadius*1000)
+    .filter(p=>foodCategory==='all'||p.foodCat===foodCategory)
+    .filter(p=>!foodQuery||p.name.toLowerCase().includes(foodQuery))
+    .sort((a,b)=>(b.score-a.score)||(a.distance-b.distance));
+  const focus=shown.slice(0,6),more=shown.slice(6,24);
   $('#food').className='page app-page'+(currentPage==='food'?' active':'');
   $('#food').innerHTML=`<div class="app-head food-head">
     <div><h1>${L('food_title')}</h1><p>${L('food_sub')}</p></div>
@@ -123,13 +143,15 @@ function renderFood(){
     <div class="search-box">${icon('search','sm')}<input value="${esc(foodQuery)}" oninput="setFoodSearch(this.value)" placeholder="${L('search_food')}"></div>
     <div class="radius-mini">${[.5,1,2,5].map(r=>`<button class="${r===foodRadius?'active':''}" onclick="setFoodRadius(${r})">${r<1?'500m':r+'km'}</button>`).join('')}</div>
   </div>
-  ${!userLocation?locationState('food'):foodLoading?`<div class="state-card paper-card"><div class="spinner"></div><h3>${L('nearby_loading')}</h3></div>`:(!foodPois.length&&!foodError&&!DATA.server_food)?`<div class="state-card paper-card food-search-ready"><h3>${L('server_search_now')}</h3><p>${L('server_search_hint')}</p><button class="primary-btn" onclick="requestServerFood(false)">${L('server_search_now')}</button></div>`:
+  ${!userLocation?locationState('food'):foodLoading?`<div class="state-card paper-card"><div class="spinner"></div><h3>${L('nearby_loading')}</h3></div>`:(!foodPois.length&&!foodError&&!DATA.server_food)?`<div class="state-card paper-card food-search-ready"><h3>${L('server_search_now')}</h3><p>${L('server_search_hint')}</p><button class="primary-btn" onclick="requestServerFood(false,Math.max(foodRadius,2))">${L('server_search_now')}</button></div>`:
   `${foodError?`<div class="local-note">${L(foodError==='cached'?'cached':'service_down')} ${foodError==='failed'?`<button class="mini-btn" onclick="loadFoodPois(true)">${L('retry')}</button> <a class="mini-btn" target="_blank" rel="noopener" href="${amapNearbyUrl('food')}">${L('amap_nearby')}</a>`:''}</div>`:''}
    ${focus.length?`<section class="food-focus-section"><div class="food-carousel" id="foodCarousel">${focus.map(foodCarouselCard).join('')}</div><div class="food-carousel-dots">${focus.map((_,i)=>`<span class="${i===0?'active':''}"></span>`).join('')}</div></section>`:''}
    ${more.length?`<section class="food-more-section"><div class="food-section-head"><h2>${L('more_recommendations')}</h2><span>${L('sorted_by_score')}</span></div><div class="food-more-list">${more.map(foodCompactCard).join('')}</div></section>`:''}
    ${(!shown.length&&foodError!=='failed')?`<div class="state-card paper-card"><h3>${L('nothing_food')}</h3><p>${L('wider')}</p></div>`:''}
    ${nearbyToolsHTML()}`}`;
   bindFoodCarousel();
+  requestAnimationFrame(fitFrame);
+  setTimeout(fitFrame,60);
 }
 function bindFoodCarousel(){
   const sc=$('#foodCarousel');if(!sc)return;

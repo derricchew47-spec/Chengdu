@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Server-side nearby-food lookup.
+"""Server-side nearby-food pool lookup.
 
 The phone browser only obtains GPS coordinates. Overpass requests are made by
 the Streamlit/Python server, avoiding mobile-browser CORS/network differences.

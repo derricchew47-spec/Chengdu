@@ -56,9 +56,14 @@ if lat_raw and lon_raw:
         category = _one_query_param("food_cat", "all")
         force = bool(_one_query_param("food_refresh"))
 
+        # Fetch one broad pool from the server. Category/radius filtering is
+        # handled locally in the browser afterwards, so ordinary filter taps
+        # no longer reload Streamlit.
         server_food = get_nearby_food(
-            lat, lon, radius, category, force=force
+            lat, lon, radius, "all", force=force
         )
+        server_food["view_category"] = category
+        server_food["view_radius"] = radius
         st.session_state["server_food"] = server_food
         initial_page = "food"
     except (TypeError, ValueError):
@@ -72,4 +77,4 @@ FRAME_HEIGHT = 860
 import streamlit.components.v1 as components
 
 # HTML is a complete document, not a URL. Always render it with components.html.
-components.html(HTML, height=FRAME_HEIGHT, scrolling=False)
+components.html(HTML, height=FRAME_HEIGHT, scrolling=True)
