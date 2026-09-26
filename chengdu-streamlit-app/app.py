@@ -69,9 +69,7 @@ payload = build_payload(server_food=server_food, initial_page=initial_page)
 HTML = build_html(payload)
 FRAME_HEIGHT = 860
 
-if hasattr(st, "iframe"):
-    st.iframe(HTML, width="stretch", height=FRAME_HEIGHT)
-else:  # older Streamlit versions
-    import streamlit.components.v1 as components
+import streamlit.components.v1 as components
 
-    components.html(HTML, height=FRAME_HEIGHT, scrolling=False)
+# HTML is a complete document, not a URL. Always render it with components.html.
+components.html(HTML, height=FRAME_HEIGHT, scrolling=False)

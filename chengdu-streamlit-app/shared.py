@@ -291,6 +291,7 @@ const I18N={
   morning:'Good morning,',afternoon:'Good afternoon,',evening:'Good evening,',home_line:'See a bigger world, together as a family.',hero_1:'Chengdu.',hero_2:'Just right.',
   weather_loading:'Weather updating',sunny:'Sunny',partly:'Partly cloudy',cloudy:'Cloudy',fog:'Fog',rain:'Rain',snow:'Snow',showers:'Showers',storm:'Thunderstorms',chengdu:'Chengdu',chongqing:'Chongqing',
   food_title:'Nearby Food',food_sub:'What is worth eating near me right now?',search_food:'Search nearby places',range:'Distance',retry:'Retry',location_title:'Location needed',location_body:'Allow one location check to find places truly near you. The app does not track continuously.',locate:'Use My Location',locating:'Finding your location…',location_denied:'Location permission is off',location_denied_body:'Allow location in your browser settings, then try again.',location_insecure:'Secure connection required',location_insecure_body:'Open the app over HTTPS, or use localhost / 127.0.0.1 when running it locally.',location_unavailable:'Location is temporarily unavailable',location_unavailable_body:'This is not caused by being outside Chengdu. Check that device location is on, then try again.',nearby_services:'Nearby Services',opens_amap:'Tap to open AMap automatically',opening_amap:'Opening AMap…',popup_blocked:'Your browser blocked the new window. Allow pop-ups and try again.',
+  server_search_now:'Search nearby places',server_search_hint:'Location ready. Tap to search nearby places.',
   all:'All',sichuan:'Sichuan',hotpot:'Hot Pot',snacks:'Snacks',noodles:'Noodles',coffee:'Coffee',dessert:'Dessert',more:'More',
   nothing_food:'Nothing suitable nearby yet.',wider:'Try a wider radius.',service_down:'Nearby search is temporarily unavailable.',cached:'Showing the last cached results.',smart_score:'Smart Score',limited:'Limited data',high_conf:'High confidence',open:'Open',hours_listed:'Hours available',walk:'~{n} min walk',
   more_recommendations:'More recommendations',sorted_by_score:'Recommended first',food_categories:'Food categories',category_unknown:'Limited category data',no_hours:'No hours data',hours:'Opening hours',data_source:'Data source',data_status:'Data status',osm_notice:'Data comes from OpenStreetMap and may not include the latest menu, prices, or complete opening hours. Please confirm before visiting.',open_amap:'Open in AMap',
@@ -423,34 +424,44 @@ let foodRequestSeq=0,foodRequestKey='';
 const LOCATION_MAX_AGE=12*60*1000;
 const locationFresh=()=>!!(userLocation&&locationTimestamp&&Date.now()-locationTimestamp<=LOCATION_MAX_AGE);
 function expireLocationIfNeeded(){if(userLocation&&!locationFresh()){userLocation=null;locationTimestamp=0;geoStatus='idle';foodPois=[];selectedFood=null}}
+function foodServerUrl(force=false){
+  if(!userLocation)return'';
+  let base='';
+  try{base=window.parent.location.href}catch(e){}
+  if(!base)base=document.referrer||'';
+  if(!base||base==='about:srcdoc')return'';
+  const u=new URL(base);
+  u.searchParams.set('food_lat',Number(userLocation.lat).toFixed(4));
+  u.searchParams.set('food_lon',Number(userLocation.lon).toFixed(4));
+  u.searchParams.set('food_r',String(foodRadius));
+  u.searchParams.set('food_cat',String(foodCategory||'all'));
+  if(force)u.searchParams.set('food_refresh',String(Date.now()));
+  else u.searchParams.delete('food_refresh');
+  return u.toString()
+}
 function requestServerFood(force=false){
   if(!userLocation)return;
+  const href=foodServerUrl(force);
+  if(!href){foodLoading=false;foodError='failed';if(currentPage==='food')renderFood();return}
   foodLoading=true;foodError='';
   if(currentPage==='food')renderFood();
 
-  try{
-    const u=new URL(window.parent.location.href);
-    u.searchParams.set('food_lat',Number(userLocation.lat).toFixed(4));
-    u.searchParams.set('food_lon',Number(userLocation.lon).toFixed(4));
-    u.searchParams.set('food_r',String(foodRadius));
-    u.searchParams.set('food_cat',String(foodCategory||'all'));
-    if(force)u.searchParams.set('food_refresh',String(Date.now()));
-    else u.searchParams.delete('food_refresh');
-    window.parent.location.assign(u.toString())
-  }catch(e){
-    foodLoading=false;foodError='failed';
-    if(currentPage==='food')renderFood()
-  }
+  // This function is called from an actual tap/click (search/filter/radius).
+  // A real target=_top link is reliable inside Streamlit's component sandbox.
+  const a=document.createElement('a');
+  a.href=href;
+  a.target='_top';
+  a.rel='noopener';
+  a.style.display='none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>a.remove(),1000)
 }
 function requestLocation(source='food'){
   const redraw=()=>{if(currentPage==='food')renderFood()};
-  const useCurrent=()=>{
-    if(userLocation){
-      geoStatus='ready';redraw();
-      if(currentPage==='food'&&!foodPois.length&&!foodLoading)requestServerFood(false)
-    }
-  };
-  if(locationFresh()){useCurrent();return}
+  if(locationFresh()){
+    geoStatus='ready';redraw();return
+  }
   if(!window.isSecureContext){geoStatus='insecure';redraw();return}
   if(!navigator.geolocation){geoStatus='unavailable';redraw();return}
   geoStatus='pending';redraw();
@@ -466,7 +477,10 @@ function requestLocation(source='food'){
     geoStatus='ready';
     store.set('chengduLastLocation',JSON.stringify(userLocation));
     if(source==='amap'){finishAmapOpen();return}
-    requestServerFood(true)
+    // IMPORTANT: do not attempt top-frame navigation inside this async
+    // geolocation callback. Mobile Safari/Streamlit sandbox may block it.
+    // Render a second explicit "search nearby" button instead.
+    redraw()
   };
   const failFinal=e=>{
     if(source==='amap')cancelAmapOpen();
@@ -488,14 +502,7 @@ function requestLocation(source='food'){
     {enableHighAccuracy:false,timeout:20000,maximumAge:10*60*1000}
   )
 }
-function cleanFoodQueryParams(){
-  if(!DATA.server_food)return;
-  try{
-    const u=new URL(window.parent.location.href);
-    ['food_lat','food_lon','food_r','food_cat','food_refresh'].forEach(k=>u.searchParams.delete(k));
-    window.parent.history.replaceState({},'',u.toString())
-  }catch(e){}
-}
+function cleanFoodQueryParams(){}
 function osmPhoto(t){if(t.image&&/^https?:/i.test(t.image))return t.image;if(t.wikimedia_commons){const f=t.wikimedia_commons.replace(/^File:/,'');return`https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(f)}?width=800`}return''}
 function osmName(t){return t[lang==='zh'?'name:zh':'name:en']||t.name||t['name:zh']||t['name:en']||L('unknown')}
 function foodCategoryOf(t){const c=(t.cuisine||'').toLowerCase(),a=t.amenity||'';if(a==='cafe')return'coffee';if(a==='ice_cream'||/dessert|ice_cream|cake/.test(c))return'dessert';if(/hot_pot|hotpot/.test(c))return'hotpot';if(/noodle|ramen/.test(c))return'noodles';if(a==='fast_food'||a==='food_court')return'snacks';if(/sichuan|chinese/.test(c))return'sichuan';return'more'}

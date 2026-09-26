@@ -105,7 +105,7 @@ def _live_query(
                     "Accept": "application/json",
                 },
             )
-            with urlopen(req, timeout=25) as response:
+            with urlopen(req, timeout=15) as response:
                 if response.status != 200:
                     raise RuntimeError(f"HTTP {response.status}")
                 payload = json.loads(response.read().decode("utf-8"))

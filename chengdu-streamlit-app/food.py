@@ -123,14 +123,13 @@ function renderFood(){
     <div class="search-box">${icon('search','sm')}<input value="${esc(foodQuery)}" oninput="setFoodSearch(this.value)" placeholder="${L('search_food')}"></div>
     <div class="radius-mini">${[.5,1,2,5].map(r=>`<button class="${r===foodRadius?'active':''}" onclick="setFoodRadius(${r})">${r<1?'500m':r+'km'}</button>`).join('')}</div>
   </div>
-  ${!userLocation?locationState('food'):foodLoading?`<div class="state-card paper-card"><div class="spinner"></div><h3>${L('nearby_loading')}</h3></div>`:
+  ${!userLocation?locationState('food'):foodLoading?`<div class="state-card paper-card"><div class="spinner"></div><h3>${L('nearby_loading')}</h3></div>`:(!foodPois.length&&!foodError&&!DATA.server_food)?`<div class="state-card paper-card food-search-ready"><h3>${L('server_search_now')}</h3><p>${L('server_search_hint')}</p><button class="primary-btn" onclick="requestServerFood(false)">${L('server_search_now')}</button></div>`:
   `${foodError?`<div class="local-note">${L(foodError==='cached'?'cached':'service_down')} ${foodError==='failed'?`<button class="mini-btn" onclick="loadFoodPois(true)">${L('retry')}</button> <a class="mini-btn" target="_blank" rel="noopener" href="${amapNearbyUrl('food')}">${L('amap_nearby')}</a>`:''}</div>`:''}
    ${focus.length?`<section class="food-focus-section"><div class="food-carousel" id="foodCarousel">${focus.map(foodCarouselCard).join('')}</div><div class="food-carousel-dots">${focus.map((_,i)=>`<span class="${i===0?'active':''}"></span>`).join('')}</div></section>`:''}
    ${more.length?`<section class="food-more-section"><div class="food-section-head"><h2>${L('more_recommendations')}</h2><span>${L('sorted_by_score')}</span></div><div class="food-more-list">${more.map(foodCompactCard).join('')}</div></section>`:''}
    ${(!shown.length&&foodError!=='failed')?`<div class="state-card paper-card"><h3>${L('nothing_food')}</h3><p>${L('wider')}</p></div>`:''}
    ${nearbyToolsHTML()}`}`;
   bindFoodCarousel();
-  if(currentPage==='food'&&userLocation&&!foodLoading&&!foodPois.length&&!foodError)setTimeout(()=>loadFoodPois(),80)
 }
 function bindFoodCarousel(){
   const sc=$('#foodCarousel');if(!sc)return;
