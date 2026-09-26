@@ -92,7 +92,7 @@ function compactStatus(p){
   return p.status?`<span class="food-status">${esc(p.status)}</span>`:`<span class="food-status quiet">${L('no_hours')}</span>`
 }
 function foodCarouselCard(p){
-  return`<article class="food-focus-card" onclick="openFoodSheet('${esc(p.id)}')">
+  return`<article class="food-focus-card" onclick="openFoodSheet('${esc(p.id)}',this)">
     <div class="food-card-handle"></div>
     <h3>${esc(p.name)}</h3>
     <div class="food-focus-meta">${foodLabel(p.foodCat)} · ${distanceText(p.distance)} · ${L('walk',{n:p.walk})}</div>
@@ -102,7 +102,7 @@ function foodCarouselCard(p){
   </article>`
 }
 function foodCompactCard(p){
-  return`<article class="food-compact-card" onclick="openFoodSheet('${esc(p.id)}')">
+  return`<article class="food-compact-card" onclick="openFoodSheet('${esc(p.id)}',this)">
     <div class="food-compact-main">
       <h3>${esc(p.name)}</h3>
       <div class="food-compact-meta">${foodLabel(p.foodCat)} · ${distanceText(p.distance)} · ${L('walk',{n:p.walk})}</div>
@@ -155,16 +155,51 @@ function renderFood(){
 }
 function bindFoodCarousel(){
   const sc=$('#foodCarousel');if(!sc)return;
+  const cards=[...sc.querySelectorAll('.food-focus-card')];
   const dots=[...document.querySelectorAll('.food-carousel-dots span')];
   let raf=0;
-  const update=()=>{raf=0;const cards=[...sc.querySelectorAll('.food-focus-card')];if(!cards.length)return;const center=sc.scrollLeft+sc.clientWidth/2;let best=0,bd=Infinity;cards.forEach((c,i)=>{const d=Math.abs(c.offsetLeft+c.offsetWidth/2-center);if(d<bd){bd=d;best=i}});dots.forEach((d,i)=>d.classList.toggle('active',i===best))};
-  sc.addEventListener('scroll',()=>{if(!raf)raf=requestAnimationFrame(update)},{passive:true});
+
+  const update=()=>{
+    raf=0;
+    if(!cards.length)return;
+    const center=sc.scrollLeft+sc.clientWidth/2;
+    const half=Math.max(1,sc.clientWidth/2);
+    let best=0,bd=Infinity;
+
+    cards.forEach((c,i)=>{
+      const cardCenter=c.offsetLeft+c.offsetWidth/2;
+      const px=cardCenter-center;
+      const n=Math.max(-1.35,Math.min(1.35,px/half));
+      const a=Math.abs(n);
+      const rot=n*8.5;
+      const y=Math.min(20,a*a*17);
+      const scale=1-Math.min(.075,a*.055);
+      const opacity=1-Math.min(.20,a*.13);
+
+      c.style.transform=`translate3d(0,${y}px,0) rotate(${rot}deg) scale(${scale})`;
+      c.style.opacity=String(opacity);
+      c.style.zIndex=String(20-Math.round(a*10));
+
+      const d=Math.abs(px);
+      if(d<bd){bd=d;best=i}
+    });
+
+    dots.forEach((d,i)=>d.classList.toggle('active',i===best))
+  };
+
+  const queue=()=>{if(!raf)raf=requestAnimationFrame(update)};
+  sc.addEventListener('scroll',queue,{passive:true});
   requestAnimationFrame(update)
 }
-function openFoodSheet(id){
-  const p=foodPois.find(x=>x.id===id);if(!p)return;selectedFood=p;
+let foodModalOrigin=null,foodModalClosing=false;
+
+function openFoodSheet(id,originEl=null){
+  const p=foodPois.find(x=>String(x.id)===String(id));if(!p)return;
+  selectedFood=p;
+  foodModalOrigin=originEl||null;
   const tags=cuisineTokens(p);
-  showModal(`<div class="sheet-title food-sheet-title"><div><h2>${esc(p.name)}</h2><p>${foodLabel(p.foodCat)} · ${distanceText(p.distance)} · ${L('walk',{n:p.walk})}</p></div><button class="sheet-close" onclick="closeModal()">×</button></div>
+
+  const html=`<div class="sheet-title food-sheet-title"><div><h2>${esc(p.name)}</h2><p>${foodLabel(p.foodCat)} · ${distanceText(p.distance)} · ${L('walk',{n:p.walk})}</p></div><button class="sheet-close" onclick="closeModal()">×</button></div>
     <div class="food-sheet-score-row"><span class="smart-pill large">${L('smart_score')} ${p.score}</span>${compactStatus(p)}</div>
     <section class="food-sheet-section"><h3>${L('food_categories')}</h3><div class="cuisine-row detail">${tags.length?tags.map(k=>`<span class="cuisine-chip">${L(k)}</span>`).join(''):`<span class="cuisine-chip muted">${L('category_unknown')}</span>`}</div></section>
     <div class="food-info-panel">
@@ -174,8 +209,88 @@ function openFoodSheet(id){
       <div><span>${L('data_status')}</span><b>${esc(p.confidence)}</b></div>
     </div>
     <div class="food-source-note">${L('osm_notice')}</div>
-    <div class="sheet-actions food-only-nav"><a class="main" target="_blank" rel="noopener" href="${amapNavigationUrl(p)}">${L('open_amap')}</a></div>`)
+    <div class="sheet-actions food-only-nav"><a class="main" target="_blank" rel="noopener" href="${amapNavigationUrl(p)}">${L('open_amap')}</a></div>`;
+
+  showFoodModal(html,foodModalOrigin)
 }
-function showModal(html){closeModal();document.body.insertAdjacentHTML('beforeend',`<div class="modal-backdrop" id="modalBackdrop" onclick="if(event.target===this)closeModal()"><div class="sheet-modal food-sheet"><div class="sheet-grab"></div>${html}</div></div>`)}
-function closeModal(){const m=$('#modalBackdrop');if(m)m.remove()}
+
+function showFoodModal(html,originEl){
+  const old=$('#modalBackdrop');if(old)old.remove();
+  foodModalClosing=false;
+
+  const backdrop=document.createElement('div');
+  backdrop.className='modal-backdrop card-modal-backdrop';
+  backdrop.id='modalBackdrop';
+  backdrop.innerHTML=`<div class="sheet-modal food-sheet card-modal-panel" id="foodModalPanel">${html}</div>`;
+  backdrop.addEventListener('click',e=>{if(e.target===backdrop)closeModal()});
+  document.body.appendChild(backdrop);
+
+  const panel=$('#foodModalPanel');
+  const mainEl=document.querySelector('main');
+  if(mainEl)mainEl.style.overflowY='hidden';
+
+  const target=panel.getBoundingClientRect();
+  const source=originEl&&originEl.isConnected?originEl.getBoundingClientRect():null;
+
+  backdrop.style.opacity='0';
+  panel.style.opacity='0';
+
+  if(source&&source.width>0&&source.height>0){
+    const sx=Math.max(.12,Math.min(1.6,source.width/target.width));
+    const sy=Math.max(.12,Math.min(1.6,source.height/target.height));
+    const dx=(source.left+source.width/2)-(target.left+target.width/2);
+    const dy=(source.top+source.height/2)-(target.top+target.height/2);
+    panel.style.transform=`translate3d(${dx}px,${dy}px,0) scale(${sx},${sy})`;
+    panel.style.borderRadius=getComputedStyle(originEl).borderRadius||'20px';
+  }else{
+    panel.style.transform='translate3d(0,16px,0) scale(.94)';
+  }
+
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    backdrop.style.opacity='1';
+    panel.style.opacity='1';
+    panel.style.transform='translate3d(0,0,0) scale(1)';
+    panel.style.borderRadius='26px';
+  }))
+}
+
+function closeModal(immediate=false){
+  const backdrop=$('#modalBackdrop');
+  if(!backdrop)return;
+  const panel=$('#foodModalPanel');
+  const mainEl=document.querySelector('main');
+
+  if(immediate||!panel){
+    backdrop.remove();
+    if(mainEl)mainEl.style.overflowY='auto';
+    foodModalOrigin=null;
+    foodModalClosing=false;
+    return
+  }
+  if(foodModalClosing)return;
+  foodModalClosing=true;
+
+  const target=panel.getBoundingClientRect();
+  const source=foodModalOrigin&&foodModalOrigin.isConnected?foodModalOrigin.getBoundingClientRect():null;
+  backdrop.style.opacity='0';
+
+  if(source&&source.width>0&&source.height>0){
+    const sx=Math.max(.12,Math.min(1.6,source.width/target.width));
+    const sy=Math.max(.12,Math.min(1.6,source.height/target.height));
+    const dx=(source.left+source.width/2)-(target.left+target.width/2);
+    const dy=(source.top+source.height/2)-(target.top+target.height/2);
+    panel.style.transform=`translate3d(${dx}px,${dy}px,0) scale(${sx},${sy})`;
+    panel.style.borderRadius=getComputedStyle(foodModalOrigin).borderRadius||'20px';
+  }else{
+    panel.style.transform='translate3d(0,16px,0) scale(.94)';
+  }
+  panel.style.opacity='.2';
+
+  setTimeout(()=>{
+    backdrop.remove();
+    if(mainEl)mainEl.style.overflowY='auto';
+    foodModalOrigin=null;
+    foodModalClosing=false;
+  },300)
+}
 '''

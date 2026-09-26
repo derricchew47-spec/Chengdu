@@ -77,4 +77,4 @@ FRAME_HEIGHT = 860
 import streamlit.components.v1 as components
 
 # HTML is a complete document, not a URL. Always render it with components.html.
-components.html(HTML, height=FRAME_HEIGHT, scrolling=True)
+components.html(HTML, height=FRAME_HEIGHT, scrolling=False)

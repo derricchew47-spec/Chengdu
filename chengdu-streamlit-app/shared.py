@@ -240,6 +240,88 @@ FUNCTIONAL_PAGES_CSS = r'''/* ───── FUNCTIONAL PAGES + LANGUAGE (Home 
 .food-sheet-title{padding:4px 1px 10px;border-bottom:1px solid rgba(73,84,74,.1)}.food-sheet-title h2{font-size:22px}.food-sheet-score-row{display:flex;gap:8px;align-items:center;margin:12px 0}.food-sheet-section{padding:3px 0 12px}.food-sheet-section h3{font:650 13px/1.2 var(--cn-serif);margin:0 0 9px}.lang-en .food-sheet-section h3{font-family:var(--serif)}.cuisine-row.detail{margin:0;padding:0}.cuisine-row.detail .cuisine-chip{font-size:9.5px;padding:6px 10px}.food-info-panel{border:1px solid rgba(73,84,74,.11);border-radius:18px;background:rgba(255,254,249,.7);overflow:hidden}.food-info-panel>div{display:grid;grid-template-columns:38% 1fr;gap:8px;padding:11px 12px;border-bottom:1px solid rgba(73,84,74,.08);align-items:center}.food-info-panel>div:last-child{border-bottom:0}.food-info-panel span{font-size:9px;color:#777d76}.food-info-panel b{font-size:9.5px;font-weight:600;color:#5c625d;text-align:right}.food-source-note{margin-top:11px;border-radius:16px;background:#eef2e9;padding:11px 12px;font-size:8.5px;line-height:1.55;color:#71776f}.food-only-nav{grid-template-columns:1fr;margin-top:12px}.food-only-nav .main{font-size:11px;padding:12px}
 @media(max-width:360px){.food-focus-card{flex-basis:64%}.food-carousel{scroll-padding:0 18%;padding-left:18%;padding-right:18%}.radius-mini button{padding:5px 4px}.food-focus-card h3{font-size:15px}}
 
+
+/* ───── v6 fixed bottom nav + internal scrolling ───── */
+html,body{height:100%;min-height:100%;overflow:hidden;overscroll-behavior:none}
+body{align-items:stretch}
+.app-shell{height:100dvh;min-height:100dvh;max-height:100dvh;overflow:hidden}
+main{
+  height:100dvh;
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-y:contain;
+  scrollbar-width:none;
+}
+main::-webkit-scrollbar{display:none}
+.page{min-height:100%;padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 18px)}
+.bottom-nav{
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:0;
+  transform:none;
+  width:100%;
+  z-index:180;
+}
+.modal-backdrop{z-index:260}
+
+/* ───── v6 curved Food carousel ───── */
+.food-carousel{
+  perspective:900px;
+  overflow-y:visible;
+  padding-top:8px;
+  padding-bottom:26px;
+}
+.food-focus-card{
+  transform-origin:50% 145%;
+  will-change:transform,opacity;
+  transition:transform .12s linear,opacity .12s linear,box-shadow .18s ease;
+  backface-visibility:hidden;
+}
+.food-carousel:not(:active) .food-focus-card{
+  transition:transform .22s cubic-bezier(.22,.75,.25,1),opacity .18s ease,box-shadow .18s ease;
+}
+.food-focus-card:active{box-shadow:0 8px 18px rgba(50,58,49,.11)}
+
+/* ───── v6 Card → Modal ───── */
+.card-modal-backdrop{
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+  margin:0;
+  display:grid;
+  place-items:center;
+  padding:18px 14px calc(var(--nav-h) + env(safe-area-inset-bottom) + 14px);
+  background:rgba(24,36,29,.38);
+  opacity:0;
+  transition:opacity .26s ease;
+  backdrop-filter:blur(2px);
+}
+.card-modal-panel{
+  width:min(100%,420px);
+  max-height:min(74dvh,680px);
+  overflow-y:auto;
+  border-radius:26px;
+  padding:14px 15px 18px;
+  background:#fbf9f2;
+  box-shadow:0 24px 70px rgba(20,36,27,.28);
+  transform-origin:center center;
+  will-change:transform,opacity,border-radius;
+  transition:transform .30s cubic-bezier(.22,.8,.24,1),opacity .22s ease,border-radius .30s ease;
+}
+.card-modal-panel .sheet-grab{display:none}
+.card-modal-panel .food-sheet-title{padding-top:2px}
+.card-modal-panel .sheet-close{position:relative;z-index:2}
+@media (max-width:460px){
+  .app-shell,main{height:100dvh;min-height:100dvh;max-height:100dvh}
+}
+@media (prefers-reduced-motion:reduce){
+  .food-focus-card,.card-modal-panel,.card-modal-backdrop{transition:none!important}
+}
+
 '''
 BODY_OPEN = r'''
 </head>

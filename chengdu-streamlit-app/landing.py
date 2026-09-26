@@ -97,17 +97,8 @@ function enterApp(){
 function fitFrame(){
   try{
     if(!window.frameElement)return;
-    const viewport=Math.max(640,window.parent.innerHeight||window.innerHeight||640);
-    const shell=document.querySelector('.app-shell');
-    const active=document.querySelector('.page.active');
-    const shellH=shell?Math.ceil(shell.scrollHeight):0;
-    const activeH=active?Math.ceil(active.scrollHeight+30):0;
-    const docH=Math.ceil(Math.max(
-      document.documentElement.scrollHeight||0,
-      document.body.scrollHeight||0
-    ));
-    const target=Math.max(viewport,shellH,activeH,docH);
-    window.frameElement.style.height=`${target}px`;
+    const h=Math.max(640,window.parent.innerHeight||window.innerHeight||640);
+    window.frameElement.style.height=`${h}px`;
   }catch(e){}
 }
 
