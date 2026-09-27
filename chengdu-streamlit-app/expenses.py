@@ -33,7 +33,7 @@ function ledgerStats(){const stats={};ledger.members.forEach(m=>stats[m.id]={pai
 function fxText(n){return fxRate?`RM ${(Number(n)*fxRate).toFixed(2)}`:''}
 async function loadFx(){const c=cacheRead('chengduFxCnyMyr',12*60*60*1000)||cacheAny('chengduFxCnyMyr');if(c?.rate)fxRate=c.rate;try{const r=await fetch('https://open.er-api.com/v6/latest/CNY'),j=await r.json();if(j?.rates?.MYR){fxRate=Number(j.rates.MYR);cacheWrite('chengduFxCnyMyr',{rate:fxRate})}}catch(e){}if(currentPage==='expenses')renderExpenses()}
 
-const SETTLEMENT_UI_BUILD='v18-hard-i18n';
+const SETTLEMENT_UI_BUILD='v19-strict-i18n-clean-arrows';
 let settlementFocusId='';
 const EXPENSE_AVATARS=DATA.avatar_options||[];
 const MEMBER_AVATAR_STORE='chengduMemberAvatarMapV2';
@@ -311,8 +311,8 @@ function renderRecentExpenses(recent){
     </section>`
 }
 
-function settlementText(key,vars={}){
-  const zh={
+const SETTLEMENT_COPY=Object.freeze({
+  zh:Object.freeze({
     title:'结算建议',
     detail:'查看详情',
     settled:'已结清',
@@ -325,8 +325,8 @@ function settlementText(key,vars={}){
     transfers:'最简结算 {n} 笔',
     selected:'共需支付 {amount}',
     transfer:'转账 {amount}'
-  };
-  const en={
+  }),
+  en:Object.freeze({
     title:'Settlement suggestions',
     detail:'View details',
     settled:'Settled',
@@ -339,8 +339,17 @@ function settlementText(key,vars={}){
     transfers:'{n} minimal transfers',
     selected:'Total to pay {amount}',
     transfer:'Transfer {amount}'
-  };
-  let s=(lang==='zh'?zh:en)[key]||key;
+  })
+});
+
+function settlementText(key,vars={}){
+  // English is opt-in. Every other/unknown language value stays Chinese so
+  // the Chinese interface can never fall through to English copy.
+  const locale=lang==='en'?'en':'zh';
+  let s=SETTLEMENT_COPY[locale][key];
+  // Do not expose an internal identifier in the interface if a future caller
+  // mistypes a key.
+  if(typeof s!=='string')return'';
   Object.entries(vars).forEach(([k,v])=>s=s.replaceAll(`{${k}}`,String(v)));
   return s
 }
@@ -467,9 +476,10 @@ function bindSettlementFlow(){
   const baseStartX=pr.right-br.left+1;
 
   const defs=`<defs>
-    <marker id="settlementArrowHead" markerWidth="8" markerHeight="8" refX="7" refY="4"
-            orient="auto" markerUnits="strokeWidth">
-      <path d="M0,0 L8,4 L0,8 z" fill="#2d6a4b"></path>
+    <marker id="settlementArrowHead" viewBox="0 0 10 10"
+            markerWidth="10" markerHeight="10" refX="10" refY="5"
+            orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#2d6a4b"></path>
     </marker>
   </defs>`;
 
@@ -481,17 +491,22 @@ function bindSettlementFlow(){
     if(!target)return'';
 
     const tr=target.getBoundingClientRect();
-    const endX=tr.left-br.left-2;
+    // The marker tip is anchored at refX=10, so this coordinate is the exact
+    // visible tip. End on the receiver's left border, never inside the card or
+    // in the gap before it.
+    const endX=tr.left-br.left;
     const endY=tr.top-br.top+tr.height/2;
 
     // Fan the start points slightly so multiple arrows do not share one trunk.
     const startY=centerY+(idx-(count-1)/2)*fanGap;
     const startX=baseStartX;
 
-    const horizontal=Math.max(38,endX-startX);
-    const bend=Math.min(92,Math.max(38,horizontal*.42));
-    const c1x=startX+bend;
-    const c2x=endX-bend;
+    // Keep both control points ordered inside the inter-column gap. The old
+    // fixed 38px bend could cross them on narrow screens and make the curve
+    // overshoot before returning to the receiver.
+    const horizontal=Math.max(1,endX-startX);
+    const c1x=startX+horizontal*.42;
+    const c2x=startX+horizontal*.72;
 
     return`<g class="settlement-flow-link">
       <circle class="settlement-flow-origin" cx="${startX}" cy="${startY}" r="2.6"></circle>

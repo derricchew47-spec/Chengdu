@@ -1141,29 +1141,7 @@ const PLACE_EN={
 };
 const CAT_KEYS={餐饮:'food_cat',交通:'transport',门票:'tickets',购物:'shopping_expense',住宿:'lodging',其他:'other'};
 const L=(k,v={})=>{
-  const settlementFallback={
-    zh:{
-      settlement_transfer_count:'最简结算 {n} 笔',
-      settlement_payers:'需要付款',
-      settlement_receivers:'需要收款',
-      settlement_selected_total:'共需支付 {amount}',
-      settlement_transfer_amount:'转账 {amount}',
-      settlement_pay:'应付',
-      settlement_receive:'应收',
-      settlement_tap_hint:'点击左侧成员查看最终转账路径'
-    },
-    en:{
-      settlement_transfer_count:'{n} minimal transfers',
-      settlement_payers:'Needs to pay',
-      settlement_receivers:'Needs to receive',
-      settlement_selected_total:'Total to pay {amount}',
-      settlement_transfer_amount:'Transfer {amount}',
-      settlement_pay:'Pay',
-      settlement_receive:'Receive',
-      settlement_tap_hint:'Tap a payer to view the final transfer paths'
-    }
-  };
-  let s=(I18N[lang]&&I18N[lang][k])||(settlementFallback[lang]&&settlementFallback[lang][k])||(I18N.zh&&I18N.zh[k])||k;
+  let s=(I18N[lang]&&I18N[lang][k])||(I18N.zh&&I18N.zh[k])||k;
   Object.entries(v).forEach(([a,b])=>s=s.replaceAll(`{${a}}`,String(b)));
   return s
 };
