@@ -941,6 +941,58 @@ main::-webkit-scrollbar{display:none}
   margin-top:2px;
 }
 
+
+/* ───── Expenses v15 manage chip + wallet arrows ───── */
+.member-balance-actions{
+  display:flex;
+  align-items:center;
+  gap:7px;
+}
+.member-manage-btn{
+  border:1px solid rgba(67,89,72,.12)!important;
+  background:linear-gradient(180deg,#fbfaf5 0%,#f1eee5 100%)!important;
+  color:#355341!important;
+  border-radius:13px!important;
+  padding:6px 9px!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  gap:7px!important;
+  box-shadow:0 5px 14px rgba(45,60,49,.06)!important;
+  cursor:pointer!important;
+  min-width:92px!important;
+}
+.member-manage-btn-icon{
+  width:21px;height:21px;
+  border-radius:50%;
+  display:grid;place-items:center;
+  background:#e9efe7;
+  color:#3f654c;
+  font-size:9px;
+  flex:0 0 21px;
+}
+.member-manage-btn-copy{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  line-height:1.05;
+}
+.member-manage-btn-copy b{
+  font:700 8.8px var(--cn-serif)!important;
+  color:#355341!important;
+  white-space:nowrap;
+}
+.lang-en .member-manage-btn-copy b{
+  font-family:var(--serif)!important;
+  font-size:8.2px!important;
+}
+.member-manage-btn-copy small{
+  margin-top:2px;
+  font-size:6.5px;
+  color:#8a9189;
+  white-space:nowrap;
+}
+.expense-metric-icon .icon{width:18px;height:18px}
+
 '''
 BODY_OPEN = r'''
 </head>
@@ -1053,6 +1105,8 @@ const ICONS={
  food:'<path d="M6 3v6M4 3v4a2 2 0 0 0 4 0V3M6 9v8M13 3v14M13 3c3 2 3 6 0 8"/>',
  compass:'<circle cx="10" cy="10" r="7.5"/><path d="m12.8 7.2-1.7 3.9-3.9 1.7 1.7-3.9Z"/>',
  wallet:'<rect x="2" y="6" width="16" height="11.5" rx="2.2"/><path d="M4 6l9-3a1 1 0 0 1 1.3 1v2M13 11.7h5v3h-5a1.5 1.5 0 0 1 0-3Z"/>',
+ walletOut:'<rect x="2.3" y="6.2" width="12.2" height="10.8" rx="2"/><path d="M4 6.2l7-2.5a1 1 0 0 1 1.3.9v1.6M11.5 11h5M14 8.5l2.5 2.5L14 13.5"/>',
+ walletIn:'<rect x="5.5" y="6.2" width="12.2" height="10.8" rx="2"/><path d="M7 6.2l7-2.5a1 1 0 0 1 1.3.9v1.6M8.5 11h-5M6 8.5 3.5 11 6 13.5"/>',
  calendar:'<rect x="3" y="5" width="14" height="13" rx="2"/><path d="M6 3v4M14 3v4M3 9h14M7 12h.01M10 12h.01M13 12h.01M7 15h.01M10 15h.01"/>',
  chevron:'<path d="m8 4 6 6-6 6"/>', back:'<path d="m12.5 4-6 6 6 6"/>', close:'<path d="M5.5 5.5l9 9M14.5 5.5l-9 9"/>',
  search:'<circle cx="8.7" cy="8.7" r="5.7"/><path d="m13 13 4.5 4.5"/>',

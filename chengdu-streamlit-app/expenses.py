@@ -235,9 +235,9 @@ function renderExpenseOverview(){
       ${fxRate?`<div class="expense-overview-fx">≈ ${fxText(mine.share)}</div>`:''}
       <div class="expense-overview-rule"></div>
       <div class="expense-overview-pair">
-        <div class="expense-metric"><div class="expense-metric-icon">${icon('wallet','sm')}</div><div><small>${L('i_paid')}</small><b>${money(mine.paid)}</b></div></div>
+        <div class="expense-metric"><div class="expense-metric-icon">${icon('walletOut','sm')}</div><div><small>${L('i_paid')}</small><b>${money(mine.paid)}</b></div></div>
         <div class="expense-overview-divider"></div>
-        <div class="expense-metric"><div class="expense-metric-icon">${icon('receive','sm')}</div><div><small>${L('owed_to_me')}</small><b>${money(owed)}</b></div></div>
+        <div class="expense-metric"><div class="expense-metric-icon">${icon('walletIn','sm')}</div><div><small>${L('owed_to_me')}</small><b>${money(owed)}</b></div></div>
       </div>
     </section>
 
@@ -272,8 +272,8 @@ function renderMemberBalanceCard(ms,stats,nonZero){
           <button class="member-manage-btn" onclick="event.stopPropagation();openMemberManager()">
             <span class="member-manage-btn-icon">✦</span>
             <span class="member-manage-btn-copy">
-              <b>${APP_LANG==='en'?'Manage':'成员管理'}</b>
-              <small>${APP_LANG==='en'?'Members':'名单与添加'}</small>
+              <b>${lang==='zh'?'成员管理':'Manage members'}</b>
+              <small>${lang==='zh'?'名单与添加':'List & add'}</small>
             </span>
           </button>
           <button class="expense-section-link" onclick="event.stopPropagation();toggleMemberBalances()">
