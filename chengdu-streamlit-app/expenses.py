@@ -30,10 +30,14 @@ async function cloudInsert(table,row){return cloudBatch([{table,method:'POST',qu
 async function cloudPatch(table,id,row){return cloudBatch([{table,method:'PATCH',query:`id=eq.${encodeURIComponent(id)}&trip_id=eq.${encodeURIComponent(TRIP_ID)}`,body:row}])}
 async function cloudDelete(table,query){return cloudBatch([{table,method:'DELETE',query,body:null}])}
 function ledgerStats(){const stats={};ledger.members.forEach(m=>stats[m.id]={paid:0,share:0,net:0});ledger.expenses.forEach(e=>{if(stats[e.paid_by_member_id])stats[e.paid_by_member_id].paid+=Number(e.amount)});ledger.splits.forEach(s=>{if(stats[s.member_id])stats[s.member_id].share+=Number(s.share_amount)});Object.values(stats).forEach(x=>x.net=x.paid-x.share);ledger.settlements.forEach(s=>{if(stats[s.from_member_id])stats[s.from_member_id].net+=Number(s.amount);if(stats[s.to_member_id])stats[s.to_member_id].net-=Number(s.amount)});const creditors=Object.entries(stats).filter(([,x])=>x.net>.005).map(([id,x])=>({id,amt:x.net})).sort((a,b)=>b.amt-a.amt),debtors=Object.entries(stats).filter(([,x])=>x.net<-.005).map(([id,x])=>({id,amt:-x.net})).sort((a,b)=>b.amt-a.amt),transfers=[];let i=0,j=0;while(i<debtors.length&&j<creditors.length){const a=Math.min(debtors[i].amt,creditors[j].amt);if(a>.005)transfers.push({from:debtors[i].id,to:creditors[j].id,amount:Math.round(a*100)/100});debtors[i].amt-=a;creditors[j].amt-=a;if(debtors[i].amt<.005)i++;if(creditors[j].amt<.005)j++}return{stats,transfers}}
-function fxText(n){return fxRate?`RM ${(Number(n)*fxRate).toFixed(2)}`:''}
+function fxText(n){
+  if(!fxRate)return'';
+  const amount=(Number(n)*fxRate).toFixed(2);
+  return lang==='en'?`RM ${amount}`:`马币约 ${amount}`
+}
 async function loadFx(){const c=cacheRead('chengduFxCnyMyr',12*60*60*1000)||cacheAny('chengduFxCnyMyr');if(c?.rate)fxRate=c.rate;try{const r=await fetch('https://open.er-api.com/v6/latest/CNY'),j=await r.json();if(j?.rates?.MYR){fxRate=Number(j.rates.MYR);cacheWrite('chengduFxCnyMyr',{rate:fxRate})}}catch(e){}if(currentPage==='expenses')renderExpenses()}
 
-const SETTLEMENT_UI_BUILD='v20-lines-only';
+const SETTLEMENT_UI_BUILD='v21-expenses-complete-i18n-wallet-arrows';
 let settlementFocusId='';
 const EXPENSE_AVATARS=DATA.avatar_options||[];
 const MEMBER_AVATAR_STORE='chengduMemberAvatarMapV2';
@@ -246,9 +250,9 @@ function renderExpenseOverview(){
 
     <div class="expense-focus-tabs">
       ${[
-        ['paid','my_payments','My payments'],
-        ['owed','owed_to_me_tab','Owed to me'],
-        ['owe','i_owe_others','I owe others']
+        ['paid','my_payments'],
+        ['owed','owed_to_me_tab'],
+        ['owe','i_owe_others']
       ].map(x=>`<button class="expense-focus-tab ${expenseFocus===x[0]?'active':''}" onclick="setExpenseFocus('${x[0]}')"><span class="tab-main">${L(x[1])}</span></button>`).join('')}
     </div>
 
@@ -556,7 +560,7 @@ function memberManagerRows(){
       ${avatarHTML(m.id,'member-manage-avatar')}
       <div class="member-manage-copy">
         <b>${esc(m.display_name)} ${isMe?`<span class="me-badge">${L('this_is_me')}</span>`:''}</b>
-        <small>${active?L('manage_hint'):L('inactive_label')}</small>
+        <small>${active?L('active_member'):L('inactive_label')}</small>
       </div>
       <div class="member-manage-actions">
         ${active&&!isMe?`<button class="member-action me" onclick="chooseMeFromManager('${m.id}')">${L('this_is_me')}</button>`:''}
@@ -645,7 +649,7 @@ async function toggleMember(id){const m=member(id);if(!m)return;if(m.id===meId()
 function openExpenseSheet(){
   const ms=activeMembers();if(!ms.length){toast(L('member_needed'));expenseTab='members';renderExpenses();return}
   const cats=['餐饮','交通','门票','购物','住宿','其他'];
-  showExpenseModal(`<div class="sheet-title"><h2>${L('add_expense')}</h2><button class="sheet-close" onclick="closeExpenseModal()">×</button></div><div class="form-grid"><div class="field"><label>${L('amount')} · CNY</label><input id="billAmount" inputmode="decimal" placeholder="¥ 0.00" oninput="updateSplitFields()"></div><div class="field"><label>${L('category')}</label><select id="billCategory">${cats.map(c=>`<option value="${c}">${catLabel(c)}</option>`).join('')}</select></div><div class="field"><label>${L('description')}</label><input id="billNote" placeholder="${L('optional')}"></div><div class="field"><label>${L('paid_by')}</label><select id="billPayer">${ms.map(m=>`<option value="${m.id}" ${m.id===meId()?'selected':''}>${esc(m.display_name)}</option>`).join('')}</select></div><div class="field"><label>${L('participants')}</label><div class="check-grid">${ms.map(m=>`<label class="check-pill"><input class="participant-check" type="checkbox" value="${m.id}" checked onchange="updateSplitFields()"> ${esc(m.display_name)}</label>`).join('')}</div></div><div class="field"><label>${L('split_method')}</label><select id="billMethod" onchange="updateSplitFields()"><option value="equal">${L('equal')}</option><option value="exact">${L('exact')}</option><option value="percentage">${L('percentage')}</option><option value="shares">${L('shares')}</option></select></div><div id="splitFields" class="split-lines"></div><div id="billValidation" class="validation"></div><button class="primary-btn full" onclick="saveExpense()">${L('save')}</button></div>`);
+  showExpenseModal(`<div class="sheet-title"><h2>${L('add_expense')}</h2><button class="sheet-close" onclick="closeExpenseModal()">×</button></div><div class="form-grid"><div class="field"><label>${L('amount')} · ${L('cny')}</label><input id="billAmount" inputmode="decimal" placeholder="¥ 0.00" oninput="updateSplitFields()"></div><div class="field"><label>${L('category')}</label><select id="billCategory">${cats.map(c=>`<option value="${c}">${catLabel(c)}</option>`).join('')}</select></div><div class="field"><label>${L('description')}</label><input id="billNote" placeholder="${L('optional')}"></div><div class="field"><label>${L('paid_by')}</label><select id="billPayer">${ms.map(m=>`<option value="${m.id}" ${m.id===meId()?'selected':''}>${esc(m.display_name)}</option>`).join('')}</select></div><div class="field"><label>${L('participants')}</label><div class="check-grid">${ms.map(m=>`<label class="check-pill"><input class="participant-check" type="checkbox" value="${m.id}" checked onchange="updateSplitFields()"> ${esc(m.display_name)}</label>`).join('')}</div></div><div class="field"><label>${L('split_method')}</label><select id="billMethod" onchange="updateSplitFields()"><option value="equal">${L('equal')}</option><option value="exact">${L('exact')}</option><option value="percentage">${L('percentage')}</option><option value="shares">${L('shares')}</option></select></div><div id="splitFields" class="split-lines"></div><div id="billValidation" class="validation"></div><button class="primary-btn full" onclick="saveExpense()">${L('save')}</button></div>`);
   updateSplitFields()
 }
 
