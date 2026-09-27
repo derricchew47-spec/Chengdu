@@ -890,6 +890,57 @@ main::-webkit-scrollbar{display:none}
   object-position:50% 50%!important;
 }
 
+
+/* ───── v14 prettier member manage chip ───── */
+.member-balance-actions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.member-manage-btn{
+  border:1px solid rgba(77,102,81,.10);
+  background:linear-gradient(180deg, rgba(252,250,244,.98) 0%, rgba(245,241,232,.98) 100%);
+  color:#355341;
+  border-radius:14px;
+  padding:7px 10px;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  box-shadow:0 6px 18px rgba(44,58,48,.06);
+  cursor:pointer;
+  min-width:92px;
+}
+.member-manage-btn:active{transform:scale(.985)}
+.member-manage-btn-icon{
+  width:22px;height:22px;
+  display:grid;place-items:center;
+  border-radius:999px;
+  background:rgba(75,109,82,.10);
+  color:#40634c;
+  font-size:10px;
+  flex:0 0 22px;
+}
+.member-manage-btn-copy{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  line-height:1.05;
+}
+.member-manage-btn-copy b{
+  font:700 9.2px var(--cn-serif);
+  letter-spacing:.01em;
+  color:#355341;
+}
+.lang-en .member-manage-btn-copy b{
+  font-family:var(--serif);
+  font-size:8.9px;
+}
+.member-manage-btn-copy small{
+  font-size:6.6px;
+  color:#879083;
+  margin-top:2px;
+}
+
 '''
 BODY_OPEN = r'''
 </head>

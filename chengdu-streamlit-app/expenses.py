@@ -269,7 +269,13 @@ function renderMemberBalanceCard(ms,stats,nonZero){
       <div class="expense-section-head">
         <h3>${L('member_balance')}</h3>
         <div class="member-balance-actions">
-          <button class="member-manage-btn" onclick="event.stopPropagation();openMemberManager()">${L('manage_members')}</button>
+          <button class="member-manage-btn" onclick="event.stopPropagation();openMemberManager()">
+            <span class="member-manage-btn-icon">✦</span>
+            <span class="member-manage-btn-copy">
+              <b>${APP_LANG==='en'?'Manage':'成员管理'}</b>
+              <small>${APP_LANG==='en'?'Members':'名单与添加'}</small>
+            </span>
+          </button>
           <button class="expense-section-link" onclick="event.stopPropagation();toggleMemberBalances()">
             <span id="memberBalanceToggleText">${L(memberBalancesExpanded?'collapse':'view_all')}</span>
             <span id="memberBalanceToggleArrow">${memberBalancesExpanded?'⌃':'›'}</span>
