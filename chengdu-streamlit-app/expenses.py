@@ -33,6 +33,7 @@ function ledgerStats(){const stats={};ledger.members.forEach(m=>stats[m.id]={pai
 function fxText(n){return fxRate?`RM ${(Number(n)*fxRate).toFixed(2)}`:''}
 async function loadFx(){const c=cacheRead('chengduFxCnyMyr',12*60*60*1000)||cacheAny('chengduFxCnyMyr');if(c?.rate)fxRate=c.rate;try{const r=await fetch('https://open.er-api.com/v6/latest/CNY'),j=await r.json();if(j?.rates?.MYR){fxRate=Number(j.rates.MYR);cacheWrite('chengduFxCnyMyr',{rate:fxRate})}}catch(e){}if(currentPage==='expenses')renderExpenses()}
 
+const SETTLEMENT_UI_BUILD='v18-hard-i18n';
 let settlementFocusId='';
 const EXPENSE_AVATARS=DATA.avatar_options||[];
 const MEMBER_AVATAR_STORE='chengduMemberAvatarMapV2';

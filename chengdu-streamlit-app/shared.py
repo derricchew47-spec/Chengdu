@@ -1140,7 +1140,33 @@ const PLACE_EN={
  '三星堆':'Sanxingdui','人民公园':"People's Park",'IFS':'IFS','春熙路':'Chunxi Road','天府机场':'Tianfu International Airport','高铁前往重庆':'High-Speed Rail to Chongqing','抵达重庆':'Arrive in Chongqing','自由活动':'Free Time','山城步道':'Shancheng Trail','十八梯':'Shibati','下浩里':'Xiahaoli','解放碑':'Jiefangbei','朝天门广场':'Chaotianmen Square','洪崖洞':'Hongya Cave','磁器口':'Ciqikou Ancient Town','李子坝':'Liziba','八一路好吃街':'Bayi Road Food Street','返回成都':'Return to Chengdu','熊猫基地':'Panda Base','花花':'Hua Hua','都江堰':'Dujiangyan','灌县古城':'Guanxian Ancient City','钟书阁':'Zhongshuge','南桥':'Nanqiao Bridge','蓝眼泪夜景':'Blue Tears Night View','成都自由日':'Free Day in Chengdu','酒店出发':'Leave Hotel','返程':'Journey Home'
 };
 const CAT_KEYS={餐饮:'food_cat',交通:'transport',门票:'tickets',购物:'shopping_expense',住宿:'lodging',其他:'other'};
-const L=(k,v={})=>{let s=(I18N[lang]&&I18N[lang][k])||I18N.zh[k]||k;Object.entries(v).forEach(([a,b])=>s=s.replaceAll(`{${a}}`,b));return s};
+const L=(k,v={})=>{
+  const settlementFallback={
+    zh:{
+      settlement_transfer_count:'最简结算 {n} 笔',
+      settlement_payers:'需要付款',
+      settlement_receivers:'需要收款',
+      settlement_selected_total:'共需支付 {amount}',
+      settlement_transfer_amount:'转账 {amount}',
+      settlement_pay:'应付',
+      settlement_receive:'应收',
+      settlement_tap_hint:'点击左侧成员查看最终转账路径'
+    },
+    en:{
+      settlement_transfer_count:'{n} minimal transfers',
+      settlement_payers:'Needs to pay',
+      settlement_receivers:'Needs to receive',
+      settlement_selected_total:'Total to pay {amount}',
+      settlement_transfer_amount:'Transfer {amount}',
+      settlement_pay:'Pay',
+      settlement_receive:'Receive',
+      settlement_tap_hint:'Tap a payer to view the final transfer paths'
+    }
+  };
+  let s=(I18N[lang]&&I18N[lang][k])||(settlementFallback[lang]&&settlementFallback[lang][k])||(I18N.zh&&I18N.zh[k])||k;
+  Object.entries(v).forEach(([a,b])=>s=s.replaceAll(`{${a}}`,String(b)));
+  return s
+};
 const proper=s=>lang==='en'?(PLACE_EN[s]||s):s;
 const catLabel=c=>L(CAT_KEYS[c]||c);
 const money=n=>`¥ ${Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
