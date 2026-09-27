@@ -737,6 +737,77 @@ main::-webkit-scrollbar{display:none}
   transition:none!important;
 }
 
+
+/* ───── Expenses v11 polish ───── */
+.expense-refresh{display:none!important}
+
+.member-balance-actions{
+  display:flex;
+  align-items:center;
+  gap:7px;
+}
+.member-add-btn{
+  border:1px solid rgba(45,83,61,.12);
+  background:#edf2e9;
+  color:#355d47;
+  border-radius:999px;
+  padding:5px 8px;
+  font-size:7.8px;
+  line-height:1;
+  cursor:pointer;
+  white-space:nowrap;
+}
+.member-add-btn:active{transform:scale(.97)}
+
+/* Layout state changes are instant while JS handles the visual FLIP. */
+.member-balance-morph.morph-measuring,
+.member-balance-morph.morph-measuring .member-balance-stage-row,
+.member-balance-morph.morph-measuring .member-balance-stage,
+.member-balance-morph.morph-measuring .member-balance-summary-copy{
+  transition:none!important;
+}
+
+/* Remove competing CSS timing: avatar movement + card height are JS-synchronized. */
+.member-balance-stage-row,
+.member-balance-stage,
+.member-balance-morph,
+.member-balance-morph .member-balance-summary-copy{
+  transition:none!important;
+}
+
+/* Ensure avatar artwork stays visually centered in every circular bubble. */
+.member-morph-avatar,
+.balance-avatar,
+.member-balance-person img,
+.expense-avatar-choice img,
+.settlement-route img{
+  object-fit:cover!important;
+  object-position:center center!important;
+}
+
+/* Avatar picker gets enough room to be a clear, usable member-creation window. */
+.expense-avatar-picker{
+  grid-template-columns:repeat(5,1fr)!important;
+  gap:10px 7px!important;
+  margin:8px 0 3px!important;
+}
+.expense-avatar-choice img{
+  width:50px!important;
+  height:50px!important;
+}
+.expense-avatar-choice span{
+  font-size:7px!important;
+  margin-top:4px!important;
+}
+
+/* Settlement card now shows every calculated transfer cleanly. */
+.settlement-card{
+  overflow:visible;
+}
+.settlement-card .settlement-row{
+  grid-template-columns:minmax(0,1fr) auto auto!important;
+}
+
 '''
 BODY_OPEN = r'''
 </head>
@@ -862,6 +933,7 @@ const ICONS={
  toilet:'<circle cx="6" cy="4" r="1.5"/><circle cx="14" cy="4" r="1.5"/><path d="M4 8h4v4H7v6H5v-6H4ZM12 8h4l1 5h-2v5h-2v-5h-2Z"/>',
  pharmacy:'<path d="M3 7h14v10H3ZM7 3h6v4M10 9v6M7 12h6"/>',
  trash:'<path d="M4 6h12M8 6V4h4v2M6 6l.7 11h6.6L14 6"/>',
+ receive:'<path d="M4 5.5h12v10H4z"/><path d="M7 3.5h6M10 2v7M7.5 6.5 10 9l2.5-2.5"/>',
  refresh:'<path d="M16 6V2l-2 2a7 7 0 1 0 2 9M16 2h-4"/>',
  plus:'<path d="M10 3v14M3 10h14"/>',
  users:'<circle cx="7" cy="7" r="3"/><circle cx="14" cy="8" r="2.5"/><path d="M2 17c.6-3 2.2-5 5-5s4.4 2 5 5M12 13c3-.3 5 1.2 6 4"/>',

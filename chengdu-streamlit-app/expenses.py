@@ -62,83 +62,92 @@ function toggleMemberBalances(){
 
   const reduceMotion=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const items=[...stage.querySelectorAll('.member-morph-item')];
-  const firstRects=new Map(items.map(el=>[el.dataset.memberId,el.getBoundingClientRect()]));
+  const summary=card.querySelector('.member-balance-summary-copy');
   const startH=card.getBoundingClientRect().height;
+  const firstRects=new Map(items.map(el=>[el.dataset.memberId,el.getBoundingClientRect()]));
   const expanding=!memberBalancesExpanded;
 
-  // On collapse, fade labels immediately before the avatars start moving.
-  if(!expanding){
-    items.forEach(el=>{
-      const meta=el.querySelector('.member-morph-meta');
-      if(meta)meta.animate(
-        [{opacity:1,transform:'translateY(0)'},{opacity:0,transform:'translateY(-3px)'}],
-        {duration:90,easing:'ease-out',fill:'forwards'}
-      )
-    })
-  }
-
+  // Freeze CSS layout transitions so target geometry is available instantly.
+  card.classList.add('morph-measuring');
   memberBalancesExpanded=expanding;
-  card.classList.toggle('expanded',memberBalancesExpanded);
-  card.setAttribute('aria-expanded',memberBalancesExpanded?'true':'false');
+  card.classList.toggle('expanded',expanding);
+  card.setAttribute('aria-expanded',expanding?'true':'false');
 
   const toggleText=$('#memberBalanceToggleText');
-  if(toggleText)toggleText.textContent=L(memberBalancesExpanded?'collapse':'view_all');
+  if(toggleText)toggleText.textContent=L(expanding?'collapse':'view_all');
   const toggleArrow=$('#memberBalanceToggleArrow');
-  if(toggleArrow)toggleArrow.textContent=memberBalancesExpanded?'⌃':'›';
+  if(toggleArrow)toggleArrow.textContent=expanding?'⌃':'›';
 
-  // Measure destination state.
+  // Force final layout, then record target geometry.
   card.getBoundingClientRect();
   const endH=card.getBoundingClientRect().height;
+  const lastRects=new Map(items.map(el=>[el.dataset.memberId,el.getBoundingClientRect()]));
 
   if(reduceMotion){
-    items.forEach(el=>{
-      const meta=el.querySelector('.member-morph-meta');
-      if(meta)meta.style.opacity=memberBalancesExpanded?'1':'0'
-    });
+    card.classList.remove('morph-measuring');
     return
   }
 
-  // Card starts changing size at the SAME frame as avatar travel.
   card.style.height=`${startH}px`;
   card.style.overflow='hidden';
 
-  requestAnimationFrame(()=>{
-    card.style.transition='height .30s cubic-bezier(.22,.78,.25,1),box-shadow .24s ease';
-    card.style.height=`${endH}px`;
+  // Layout is already in final state; invert each avatar back to its old visual position.
+  items.forEach(el=>{
+    const first=firstRects.get(el.dataset.memberId);
+    const last=lastRects.get(el.dataset.memberId);
+    if(!first||!last||!last.width)return;
 
-    items.forEach((el,i)=>{
-      const first=firstRects.get(el.dataset.memberId);
-      const last=el.getBoundingClientRect();
-      if(!first||!last.width)return;
+    const dx=first.left-last.left;
+    const dy=first.top-last.top;
+    const sx=first.width/last.width;
+    const sy=first.height/last.height;
 
-      const dx=first.left-last.left;
-      const dy=first.top-last.top;
-      const sx=first.width/last.width;
-      const sy=first.height/last.height;
+    el.animate(
+      [
+        {transform:`translate3d(${dx}px,${dy}px,0) scale(${sx},${sy})`,transformOrigin:'center center'},
+        {transform:'translate3d(0,0,0) scale(1)',transformOrigin:'center center'}
+      ],
+      {duration:270,easing:'cubic-bezier(.22,.78,.25,1)',fill:'both'}
+    );
 
-      el.animate(
-        [
-          {transform:`translate3d(${dx}px,${dy}px,0) scale(${sx},${sy})`,transformOrigin:'center center'},
-          {transform:'translate3d(0,0,0) scale(1)',transformOrigin:'center center'}
-        ],
-        {duration:300,easing:'cubic-bezier(.22,.78,.25,1)',fill:'both'}
-      );
-
-      const meta=el.querySelector('.member-morph-meta');
-      if(meta&&expanding){
-        meta.animate(
-          [{opacity:0,transform:'translateY(-3px)'},{opacity:1,transform:'translateY(0)'}],
-          {duration:150,delay:105,easing:'ease-out',fill:'both'}
-        )
-      }
-    })
+    const meta=el.querySelector('.member-morph-meta');
+    if(meta){
+      meta.animate(
+        expanding
+          ? [{opacity:0,transform:'translateY(-3px)'},{opacity:1,transform:'translateY(0)'}]
+          : [{opacity:1,transform:'translateY(0)'},{opacity:0,transform:'translateY(-3px)'}],
+        {
+          duration:expanding?135:95,
+          delay:expanding?85:0,
+          easing:'ease-out',
+          fill:'both'
+        }
+      )
+    }
   });
 
-  setTimeout(()=>{
+  if(summary){
+    summary.animate(
+      expanding
+        ? [{opacity:1},{opacity:0}]
+        : [{opacity:0},{opacity:1}],
+      {duration:120,delay:expanding?0:110,easing:'ease-out',fill:'both'}
+    )
+  }
+
+  // Card height and avatars use the same clock and easing.
+  const heightAnim=card.animate(
+    [{height:`${startH}px`},{height:`${endH}px`}],
+    {duration:270,easing:'cubic-bezier(.22,.78,.25,1)',fill:'both'}
+  );
+
+  card.classList.remove('morph-measuring');
+
+  heightAnim.onfinish=()=>{
     card.style.height='';
     card.style.overflow='';
-    card.style.transition='';
-  },320)
+    heightAnim.cancel();
+  };
 }
 function expenseDate(e){
   const d=new Date(e.created_at);if(Number.isNaN(d.getTime()))return'';
@@ -173,7 +182,6 @@ function expenseShell(inner){
   const panda=DATA.expense_hero||DATA.images.panda_bamboo||DATA.images.panda_portrait||'';
   return`<div class="expenses-hero-head" style="--expense-panda:url('${panda}')">
       <div class="expenses-hero-title"><h1>${L('expenses_title')}</h1><p>${L('trip_expense_sub',{n:members.length||8})}</p></div>
-      <button class="expense-refresh" onclick="syncLedger()" aria-label="${L('refresh')}">${icon('refresh','sm')}</button>
     </div>${inner}<button class="expense-fab" onclick="openExpenseSheet()" aria-label="${L('add_expense')}">＋</button>`
 }
 function renderExpenses(){
@@ -202,7 +210,7 @@ function renderExpenseOverview(){
       <div class="expense-overview-pair">
         <div class="expense-metric"><div class="expense-metric-icon">${icon('wallet','sm')}</div><div><small>${L('i_paid')}</small><b>${money(mine.paid)}</b></div></div>
         <div class="expense-overview-divider"></div>
-        <div class="expense-metric"><div class="expense-metric-icon">${icon('refresh','sm')}</div><div><small>${L('owed_to_me')}</small><b>${money(owed)}</b></div></div>
+        <div class="expense-metric"><div class="expense-metric-icon">${icon('receive','sm')}</div><div><small>${L('owed_to_me')}</small><b>${money(owed)}</b></div></div>
       </div>
     </section>
 
@@ -233,10 +241,13 @@ function renderMemberBalanceCard(ms,stats,nonZero){
   return`<section id="memberBalanceCard" class="expense-section-card member-balance-card member-balance-morph ${memberBalancesExpanded?'expanded':''}" aria-expanded="${memberBalancesExpanded?'true':'false'}" onclick="toggleMemberBalances()">
       <div class="expense-section-head">
         <h3>${L('member_balance')}</h3>
-        <button class="expense-section-link" onclick="event.stopPropagation();toggleMemberBalances()">
-          <span id="memberBalanceToggleText">${L(memberBalancesExpanded?'collapse':'view_all')}</span>
-          <span id="memberBalanceToggleArrow">${memberBalancesExpanded?'⌃':'›'}</span>
-        </button>
+        <div class="member-balance-actions">
+          <button class="member-add-btn" onclick="event.stopPropagation();openMemberSheet()">＋ ${L('add_member')}</button>
+          <button class="expense-section-link" onclick="event.stopPropagation();toggleMemberBalances()">
+            <span id="memberBalanceToggleText">${L(memberBalancesExpanded?'collapse':'view_all')}</span>
+            <span id="memberBalanceToggleArrow">${memberBalancesExpanded?'⌃':'›'}</span>
+          </button>
+        </div>
       </div>
       <div class="member-balance-stage-row">
         <div id="memberBalanceStage" class="member-balance-stage">${members}</div>
@@ -264,7 +275,7 @@ function renderRecentExpenses(recent){
     </section>`
 }
 function renderSettlementSuggestions(transfers){
-  const rows=transfers.slice(0,3).map(x=>`<div class="settlement-row">
+  const rows=transfers.map(x=>`<div class="settlement-row">
       <div class="settlement-route">${avatarHTML(x.from,'')}<b>${esc(memberName(x.from))}</b><span class="settlement-arrow">→</span>${avatarHTML(x.to,'')}<b>${esc(memberName(x.to))}</b></div>
       <div class="settlement-amount">${money(x.amount)}</div>
       <button class="settlement-remind" onclick="settleDebt('${x.from}','${x.to}',${x.amount})">${L('remind')}</button>
