@@ -993,6 +993,38 @@ main::-webkit-scrollbar{display:none}
 }
 .expense-metric-icon .icon{width:18px;height:18px}
 
+
+/* ───── Expenses v16 direct net settlement flow ───── */
+.settlement-flow-card{overflow:hidden;position:relative}
+.settlement-flow-sub{display:block;margin-top:3px;font-size:7.2px;color:#89918a;font-weight:400}
+.settlement-flow-hint{margin:0 1px 9px;padding:7px 9px;border-radius:12px;background:#eef3ea;color:#56705e;font-size:7.8px;text-align:center}
+.settlement-flow-board{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:44px;min-height:118px}
+.settlement-flow-svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:2}
+.settlement-flow-col{position:relative;z-index:3;min-width:0}
+.settlement-flow-col-title{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px;padding:0 3px;font:650 10px/1.2 var(--cn-serif);color:#314b3b}
+.lang-en .settlement-flow-col-title{font-family:var(--serif);font-size:9px}
+.settlement-flow-col-title span{min-width:18px;height:18px;display:grid;place-items:center;border-radius:999px;background:#edf2e9;color:#53705d;font:600 7px var(--sans)}
+.settlement-flow-list{display:grid;gap:7px}
+.settlement-person{width:100%;min-width:0;min-height:56px;border:1px solid rgba(70,84,73,.08);border-radius:15px;padding:7px;background:rgba(255,255,255,.74);box-shadow:0 5px 13px rgba(46,59,49,.035);display:grid;grid-template-columns:38px minmax(0,1fr) auto;align-items:center;gap:7px;position:relative;text-align:left}
+button.settlement-person{appearance:none;color:inherit;cursor:pointer}
+.settlement-person:active{transform:scale(.988)}
+.settlement-payer.active{background:linear-gradient(180deg,#2f694a,#285d42);border-color:transparent;color:#fff;box-shadow:0 8px 18px rgba(40,92,63,.18)}
+.settlement-flow-avatar{width:38px;height:38px;border-radius:50%;object-fit:cover;object-position:center;border:2px solid #f8f4ea;box-shadow:0 2px 6px rgba(40,55,45,.08)}
+.settlement-payer.active .settlement-flow-avatar{border-color:rgba(255,255,255,.72)}
+.settlement-person-copy{min-width:0}
+.settlement-person-copy b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:600 9.2px/1.15 var(--serif)}
+.settlement-person-copy small{display:block;margin-top:3px;color:#7f8880;font-size:7px;line-height:1.15}
+.settlement-person-copy small strong{font:650 8px var(--serif);color:#a95c4d}
+.settlement-payer.active .settlement-person-copy small,.settlement-payer.active .settlement-person-copy small strong{color:rgba(255,255,255,.84)}
+.settlement-person-chevron{font-size:15px;color:#829087}
+.settlement-payer.active .settlement-person-chevron{color:#fff}
+.settlement-receiver{transition:opacity .18s ease,transform .18s ease,box-shadow .18s ease}
+.settlement-receiver.linked{border-color:rgba(45,106,75,.18);box-shadow:0 7px 17px rgba(45,106,75,.08);transform:translateX(2px)}
+.settlement-receiver.dimmed{opacity:.34}
+.settlement-receiver-amount{font:650 8.4px var(--serif);color:#2d6a4b;white-space:nowrap}
+.settlement-flow-path{fill:none;stroke:#2d6a4b;stroke-width:2.2;stroke-linecap:round;opacity:.92;transition:stroke-dashoffset .38s cubic-bezier(.22,.78,.25,1);transition-delay:var(--flow-delay);filter:drop-shadow(0 1px 1px rgba(45,106,75,.08))}
+@media(max-width:360px){.settlement-flow-board{gap:34px}.settlement-person{grid-template-columns:34px minmax(0,1fr);min-height:52px}.settlement-flow-avatar{width:34px;height:34px}.settlement-person-chevron,.settlement-receiver-amount{grid-column:2;justify-self:start}.settlement-receiver-amount{margin-top:-3px}}
+
 '''
 BODY_OPEN = r'''
 </head>

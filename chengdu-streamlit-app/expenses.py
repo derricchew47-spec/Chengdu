@@ -33,6 +33,7 @@ function ledgerStats(){const stats={};ledger.members.forEach(m=>stats[m.id]={pai
 function fxText(n){return fxRate?`RM ${(Number(n)*fxRate).toFixed(2)}`:''}
 async function loadFx(){const c=cacheRead('chengduFxCnyMyr',12*60*60*1000)||cacheAny('chengduFxCnyMyr');if(c?.rate)fxRate=c.rate;try{const r=await fetch('https://open.er-api.com/v6/latest/CNY'),j=await r.json();if(j?.rates?.MYR){fxRate=Number(j.rates.MYR);cacheWrite('chengduFxCnyMyr',{rate:fxRate})}}catch(e){}if(currentPage==='expenses')renderExpenses()}
 
+let settlementFocusId='';
 const EXPENSE_AVATARS=DATA.avatar_options||[];
 const MEMBER_AVATAR_STORE='chengduMemberAvatarMapV2';
 
@@ -219,6 +220,7 @@ function renderExpenses(){
   else if(expenseTab==='split')inner=renderSplit();
   else inner=renderMembers();
   $('#expenses').innerHTML=expenseShell(inner);
+  requestAnimationFrame(()=>requestAnimationFrame(bindSettlementFlow));
 }
 function renderExpenseOverview(){
   const me=meId(),{stats,transfers}=ledgerStats(),mine=stats[me]||{paid:0,share:0,net:0};
@@ -308,16 +310,117 @@ function renderRecentExpenses(recent){
     </section>`
 }
 function renderSettlementSuggestions(transfers){
-  const rows=transfers.map(x=>`<div class="settlement-row">
-      <div class="settlement-route">${avatarHTML(x.from,'')}<b>${esc(memberName(x.from))}</b><span class="settlement-arrow">→</span>${avatarHTML(x.to,'')}<b>${esc(memberName(x.to))}</b></div>
-      <div class="settlement-amount">${money(x.amount)}</div>
-      <button class="settlement-remind" onclick="settleDebt('${x.from}','${x.to}',${x.amount})">${L('remind')}</button>
-    </div>`).join('');
-  return`<section class="expense-section-card settlement-card">
+  if(!transfers.length){
+    settlementFocusId='';
+    return`<section class="expense-section-card settlement-card settlement-flow-card">
       <div class="expense-section-head"><h3>✦ ${L('settlement_suggestions')}</h3><button class="expense-section-link" onclick="expenseTab='split';renderExpenses()">${L('view_details')} ›</button></div>
-      ${rows||`<div class="state-card"><h3>${L('settled')}</h3><p>${L('no_balances')}</p></div>`}
+      <div class="state-card"><h3>${L('settled')}</h3><p>${L('no_balances')}</p></div>
+    </section>`
+  }
+
+  const payerIds=[...new Set(transfers.map(x=>x.from))];
+  const receiverIds=[...new Set(transfers.map(x=>x.to))];
+  if(settlementFocusId&&!payerIds.includes(settlementFocusId))settlementFocusId='';
+
+  const payerTotals={};
+  payerIds.forEach(id=>payerTotals[id]=Math.round(transfers.filter(x=>x.from===id).reduce((s,x)=>s+Number(x.amount),0)*100)/100);
+
+  const receiverTotals={};
+  receiverIds.forEach(id=>receiverTotals[id]=Math.round(transfers.filter(x=>x.to===id).reduce((s,x)=>s+Number(x.amount),0)*100)/100);
+
+  const focused=settlementFocusId?transfers.filter(x=>x.from===settlementFocusId):[];
+  const focusedByReceiver={};
+  focused.forEach(x=>focusedByReceiver[x.to]=Number(x.amount));
+  const focusedTotal=Math.round(focused.reduce((s,x)=>s+Number(x.amount),0)*100)/100;
+
+  const payerRows=payerIds.map(id=>`<button class="settlement-person settlement-payer ${settlementFocusId===id?'active':''}" data-settlement-payer="${esc(id)}" onclick="selectSettlementPayer('${esc(id)}')">
+      ${avatarHTML(id,'settlement-flow-avatar')}
+      <span class="settlement-person-copy"><b>${esc(memberName(id))}</b><small>${L('settlement_pay')} <strong>${money(payerTotals[id])}</strong></small></span>
+      <span class="settlement-person-chevron">›</span>
+    </button>`).join('');
+
+  const receiverRows=receiverIds.map(id=>{
+    const linked=settlementFocusId&&focusedByReceiver[id]!=null;
+    const dimmed=settlementFocusId&&!linked;
+    const amount=linked?focusedByReceiver[id]:receiverTotals[id];
+    return`<div class="settlement-person settlement-receiver ${linked?'linked':''} ${dimmed?'dimmed':''}" data-settlement-receiver="${esc(id)}">
+      ${avatarHTML(id,'settlement-flow-avatar')}
+      <span class="settlement-person-copy"><b>${esc(memberName(id))}</b><small>${linked?L('settlement_transfer_amount',{amount:money(amount)}):`${L('settlement_receive')} ${money(amount)}`}</small></span>
+      <span class="settlement-receiver-amount">${money(amount)}</span>
+    </div>`
+  }).join('');
+
+  return`<section class="expense-section-card settlement-card settlement-flow-card">
+      <div class="expense-section-head">
+        <div><h3>✦ ${L('settlement_suggestions')}</h3><small class="settlement-flow-sub">${L('settlement_transfer_count',{n:transfers.length})}</small></div>
+        <button class="expense-section-link" onclick="expenseTab='split';renderExpenses()">${L('view_details')} ›</button>
+      </div>
+      <div class="settlement-flow-hint">${settlementFocusId?L('settlement_selected_total',{amount:money(focusedTotal)}):L('settlement_tap_hint')}</div>
+      <div class="settlement-flow-board" id="settlementFlowBoard">
+        <svg class="settlement-flow-svg" id="settlementFlowSvg" aria-hidden="true"></svg>
+        <div class="settlement-flow-col">
+          <div class="settlement-flow-col-title">${L('settlement_payers')} <span>${payerIds.length}</span></div>
+          <div class="settlement-flow-list">${payerRows}</div>
+        </div>
+        <div class="settlement-flow-col">
+          <div class="settlement-flow-col-title">${L('settlement_receivers')} <span>${receiverIds.length}</span></div>
+          <div class="settlement-flow-list">${receiverRows}</div>
+        </div>
+      </div>
     </section>`
 }
+
+function selectSettlementPayer(id){
+  settlementFocusId=settlementFocusId===id?'':id;
+  renderExpenses()
+}
+
+function bindSettlementFlow(){
+  const board=$('#settlementFlowBoard');
+  const svg=$('#settlementFlowSvg');
+  if(!board||!svg||!settlementFocusId)return;
+
+  const payer=board.querySelector(`[data-settlement-payer="${CSS.escape(settlementFocusId)}"]`);
+  if(!payer)return;
+
+  const links=ledgerStats().transfers.filter(x=>x.from===settlementFocusId);
+  if(!links.length)return;
+
+  const br=board.getBoundingClientRect();
+  svg.setAttribute('viewBox',`0 0 ${br.width} ${br.height}`);
+  svg.setAttribute('width',br.width);
+  svg.setAttribute('height',br.height);
+
+  const pr=payer.getBoundingClientRect();
+  const sx=pr.right-br.left-3;
+  const sy=pr.top-br.top+pr.height/2;
+
+  let paths='';
+  links.forEach((link,idx)=>{
+    const target=board.querySelector(`[data-settlement-receiver="${CSS.escape(link.to)}"]`);
+    if(!target)return;
+    const tr=target.getBoundingClientRect();
+    const ex=tr.left-br.left+3;
+    const ey=tr.top-br.top+tr.height/2;
+    const span=Math.max(28,ex-sx);
+    const c1=sx+span*.35;
+    const c2=ex-span*.35;
+    paths+=`<path class="settlement-flow-path" d="M ${sx} ${sy} C ${c1} ${sy}, ${c2} ${ey}, ${ex} ${ey}" marker-end="url(#settlementArrowHead)" style="--flow-delay:${idx*35}ms"></path>`;
+  });
+
+  svg.innerHTML=`<defs><marker id="settlementArrowHead" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#2d6a4b"></path></marker></defs>${paths}`;
+
+  requestAnimationFrame(()=>{
+    svg.querySelectorAll('.settlement-flow-path').forEach(path=>{
+      const len=path.getTotalLength();
+      path.style.strokeDasharray=String(len);
+      path.style.strokeDashoffset=String(len);
+      path.getBoundingClientRect();
+      path.style.strokeDashoffset='0';
+    })
+  })
+}
+
 function renderBills(){
   const rows=[...ledger.expenses].sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at))).map(e=>{
     const sp=ledger.splits.filter(s=>s.expense_id===e.id),src=expenseThumb(e.category);
