@@ -60,11 +60,24 @@ function toggleMemberBalances(){
   const stage=$('#memberBalanceStage');
   if(!card||!stage){memberBalancesExpanded=!memberBalancesExpanded;renderExpenses();return}
 
+  const reduceMotion=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const items=[...stage.querySelectorAll('.member-morph-item')];
   const firstRects=new Map(items.map(el=>[el.dataset.memberId,el.getBoundingClientRect()]));
   const startH=card.getBoundingClientRect().height;
+  const expanding=!memberBalancesExpanded;
 
-  memberBalancesExpanded=!memberBalancesExpanded;
+  // On collapse, fade labels immediately before the avatars start moving.
+  if(!expanding){
+    items.forEach(el=>{
+      const meta=el.querySelector('.member-morph-meta');
+      if(meta)meta.animate(
+        [{opacity:1,transform:'translateY(0)'},{opacity:0,transform:'translateY(-3px)'}],
+        {duration:90,easing:'ease-out',fill:'forwards'}
+      )
+    })
+  }
+
+  memberBalancesExpanded=expanding;
   card.classList.toggle('expanded',memberBalancesExpanded);
   card.setAttribute('aria-expanded',memberBalancesExpanded?'true':'false');
 
@@ -73,50 +86,59 @@ function toggleMemberBalances(){
   const toggleArrow=$('#memberBalanceToggleArrow');
   if(toggleArrow)toggleArrow.textContent=memberBalancesExpanded?'⌃':'›';
 
-  // Force the browser to lay out the new state, then FLIP the same avatar nodes.
+  // Measure destination state.
   card.getBoundingClientRect();
   const endH=card.getBoundingClientRect().height;
 
+  if(reduceMotion){
+    items.forEach(el=>{
+      const meta=el.querySelector('.member-morph-meta');
+      if(meta)meta.style.opacity=memberBalancesExpanded?'1':'0'
+    });
+    return
+  }
+
+  // Card starts changing size at the SAME frame as avatar travel.
   card.style.height=`${startH}px`;
   card.style.overflow='hidden';
+
   requestAnimationFrame(()=>{
-    card.style.transition='height .42s cubic-bezier(.22,.78,.25,1),box-shadow .3s ease';
+    card.style.transition='height .30s cubic-bezier(.22,.78,.25,1),box-shadow .24s ease';
     card.style.height=`${endH}px`;
-  });
 
-  items.forEach((el,i)=>{
-    const first=firstRects.get(el.dataset.memberId);
-    const last=el.getBoundingClientRect();
-    if(!first||!last.width)return;
-    const dx=first.left-last.left;
-    const dy=first.top-last.top;
-    const sx=first.width/last.width;
-    const sy=first.height/last.height;
+    items.forEach((el,i)=>{
+      const first=firstRects.get(el.dataset.memberId);
+      const last=el.getBoundingClientRect();
+      if(!first||!last.width)return;
 
-    el.animate(
-      [
-        {transform:`translate3d(${dx}px,${dy}px,0) scale(${sx},${sy})`, transformOrigin:'center center'},
-        {transform:'translate3d(0,0,0) scale(1)', transformOrigin:'center center'}
-      ],
-      {duration:430,easing:'cubic-bezier(.22,.78,.25,1)',fill:'both'}
-    );
+      const dx=first.left-last.left;
+      const dy=first.top-last.top;
+      const sx=first.width/last.width;
+      const sy=first.height/last.height;
 
-    const meta=el.querySelector('.member-morph-meta');
-    if(meta){
-      meta.animate(
-        memberBalancesExpanded
-          ? [{opacity:0,transform:'translateY(-5px)'},{opacity:1,transform:'translateY(0)'}]
-          : [{opacity:1,transform:'translateY(0)'},{opacity:0,transform:'translateY(-5px)'}],
-        {duration:memberBalancesExpanded?260:180,delay:memberBalancesExpanded?120:0,easing:'ease-out',fill:'both'}
-      )
-    }
+      el.animate(
+        [
+          {transform:`translate3d(${dx}px,${dy}px,0) scale(${sx},${sy})`,transformOrigin:'center center'},
+          {transform:'translate3d(0,0,0) scale(1)',transformOrigin:'center center'}
+        ],
+        {duration:300,easing:'cubic-bezier(.22,.78,.25,1)',fill:'both'}
+      );
+
+      const meta=el.querySelector('.member-morph-meta');
+      if(meta&&expanding){
+        meta.animate(
+          [{opacity:0,transform:'translateY(-3px)'},{opacity:1,transform:'translateY(0)'}],
+          {duration:150,delay:105,easing:'ease-out',fill:'both'}
+        )
+      }
+    })
   });
 
   setTimeout(()=>{
     card.style.height='';
     card.style.overflow='';
     card.style.transition='';
-  },460)
+  },320)
 }
 function expenseDate(e){
   const d=new Date(e.created_at);if(Number.isNaN(d.getTime()))return'';
