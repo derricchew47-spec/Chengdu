@@ -270,7 +270,6 @@ function renderMemberBalanceCard(ms,stats,nonZero){
         <h3>${L('member_balance')}</h3>
         <div class="member-balance-actions">
           <button class="member-manage-btn" onclick="event.stopPropagation();openMemberManager()">${L('manage_members')}</button>
-          <button class="member-add-btn" onclick="event.stopPropagation();openMemberSheet()">＋ ${L('add_member')}</button>
           <button class="expense-section-link" onclick="event.stopPropagation();toggleMemberBalances()">
             <span id="memberBalanceToggleText">${L(memberBalancesExpanded?'collapse':'view_all')}</span>
             <span id="memberBalanceToggleArrow">${memberBalancesExpanded?'⌃':'›'}</span>
