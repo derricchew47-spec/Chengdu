@@ -180,6 +180,7 @@ HTML_PREFIX = r'''<!doctype html>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Caveat:wght@500;600&family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@300;400;500;600&family=Noto+Serif+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 :root{
   --paper:#faf8f1; --paper-2:#f3f1e7; --sheet:#fcfbf6;
@@ -1391,7 +1392,7 @@ if(DATA.server_food){
   foodLoading=false;
   cleanFoodQueryParams();
 }
-prepareLanding();nav();renderHome();renderExpenses();showPage(DATA.initial_page||'home');fitFrame();loadWeather();loadFx();if(CLOUD)syncLedger();
+prepareLanding();nav();renderHome();renderExpenses();showPage(DATA.initial_page||'home');fitFrame();loadWeather();loadFx();if(CLOUD)syncLedger().finally(setupExpenseRealtime);
 window.addEventListener('resize',()=>{fitFrame();sizeSwipe()});
 window.addEventListener('online',()=>{if(CLOUD)syncLedger()});
 setInterval(()=>{const g=$('#greet'),ge=$('#greetEn');if(g)g.textContent=greeting();if(ge)ge.textContent=greetingEN();if(currentPage==='home'&&swipeFlipped){const i=swipeDayIdx;renderSwipeStack(i);flipTopCard(true)}},60000);

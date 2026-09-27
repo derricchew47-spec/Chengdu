@@ -10,6 +10,10 @@ function member(id){return ledger.members.find(m=>m.id===id)}
 function memberName(id){return member(id)?.display_name||L('unknown')}
 async function sbRequest(table,method='GET',query='',body=null,prefer='return=representation'){const base=CFG.supabase_url.replace(/\/$/,'')+`/rest/v1/${table}${query?`?${query}`:''}`,headers={apikey:CFG.supabase_key,'Content-Type':'application/json',Prefer:prefer};if(String(CFG.supabase_key).split('.').length===3)headers.Authorization=`Bearer ${CFG.supabase_key}`;const r=await fetch(base,{method,headers,body:body==null?undefined:JSON.stringify(body)});if(!r.ok)throw Error(await r.text());const out=await r.text();return out?JSON.parse(out):[]}
 const OUTBOX_KEY='chengduLedgerOutboxV1';let outboxFlushing=false;
+const CLOUD_BOOTSTRAP_KEY=`chengduCloudBootstrapV1:${CFG.supabase_url}:${TRIP_ID}`;
+let ledgerSyncPromise=null,ledgerSyncAgain=false;
+let expenseRealtimeClient=null,expenseRealtimeChannel=null,expenseRealtimeStarted=false;
+let expenseRealtimeRefreshTimer=null,expenseFallbackSyncTimer=null;
 function loadOutbox(){try{const q=JSON.parse(store.get(OUTBOX_KEY)||'[]');return Array.isArray(q)?q:[]}catch(e){return[]}}
 function saveOutbox(q){store.set(OUTBOX_KEY,JSON.stringify(q))}
 function queueMutation(op){const q=loadOutbox();q.push({op_id:uid(),created_at:new Date().toISOString(),...op});saveOutbox(q)}
@@ -24,7 +28,115 @@ async function flushOutbox(){
 }
 function mergeRows(remote,local){const m=new Map((remote||[]).map(x=>[x.id,x]));(local||[]).forEach(x=>m.set(x.id,x));return[...m.values()]}
 function mergeRemoteWithLocal(remote,pending){const merged={members:mergeRows(remote.members,ledger.members),expenses:mergeRows(remote.expenses,ledger.expenses),splits:mergeRows(remote.splits,ledger.splits),settlements:mergeRows(remote.settlements,ledger.settlements)};pending.filter(x=>x.method==='DELETE').forEach(op=>{const p=new URLSearchParams(op.query||''),id=(p.get('id')||'').replace(/^eq\./,''),expenseId=(p.get('expense_id')||'').replace(/^eq\./,'');const key=op.table==='expense_splits'?'splits':op.table;if(id&&merged[key])merged[key]=merged[key].filter(x=>x.id!==id);if(expenseId&&merged.splits)merged.splits=merged.splits.filter(x=>x.expense_id!==expenseId)});return merged}
-async function syncLedger(){if(!CLOUD){cloudStatus='local';return}cloudStatus='syncing';renderExpenses();await flushOutbox();try{const q=`trip_id=eq.${encodeURIComponent(TRIP_ID)}&order=created_at.asc`,[members,expenses,splits,settlements]=await Promise.all([sbRequest('members','GET',q),sbRequest('expenses','GET',q),sbRequest('expense_splits','GET',`trip_id=eq.${encodeURIComponent(TRIP_ID)}&order=created_at.asc`),sbRequest('settlements','GET',q)]),remote={members,expenses,splits,settlements},pending=loadOutbox();ledger=pending.length?mergeRemoteWithLocal(remote,pending):remote;saveLocalLedger();cloudStatus=pending.length?'failed':'cloud'}catch(e){cloudStatus='failed'}renderExpenses()}
+
+function cloudMemberRow(m){return{id:m.id,trip_id:TRIP_ID,display_name:m.display_name,is_active:m.is_active!==false,avatar_index:Number.isInteger(m.avatar_index)?m.avatar_index:avatarIndexForMember(m),created_at:m.created_at||new Date().toISOString()}}
+function cloudExpenseRow(e){return{id:e.id,trip_id:TRIP_ID,amount:Number(e.amount),currency:e.currency||'CNY',category:e.category||'其他',description:e.description||'',paid_by_member_id:e.paid_by_member_id,created_at:e.created_at||new Date().toISOString(),created_by_member_id:e.created_by_member_id||null}}
+function cloudSplitRow(s){return{id:s.id,trip_id:TRIP_ID,expense_id:s.expense_id,member_id:s.member_id,share_amount:Number(s.share_amount),created_at:s.created_at||new Date().toISOString()}}
+function cloudSettlementRow(s){return{id:s.id,trip_id:TRIP_ID,from_member_id:s.from_member_id,to_member_id:s.to_member_id,amount:Number(s.amount),created_at:s.created_at||new Date().toISOString()}}
+
+async function bootstrapLocalLedgerToCloud(remote){
+  if(store.get(CLOUD_BOOTSTRAP_KEY)==='done')return false;
+  const specs=[
+    ['members',ledger.members,remote.members,cloudMemberRow],
+    ['expenses',ledger.expenses,remote.expenses,cloudExpenseRow],
+    ['expense_splits',ledger.splits,remote.splits,cloudSplitRow],
+    ['settlements',ledger.settlements,remote.settlements,cloudSettlementRow]
+  ];
+  let queued=false;
+  specs.forEach(([table,localRows,remoteRows,normalize])=>{
+    const remoteIds=new Set((remoteRows||[]).map(x=>String(x.id)));
+    const missing=(localRows||[]).filter(x=>x?.id&&!remoteIds.has(String(x.id))).map(normalize);
+    if(missing.length){queueMutation({table,method:'POST',query:'',body:missing});queued=true}
+  });
+  if(queued&&!(await flushOutbox()))return false;
+  store.set(CLOUD_BOOTSTRAP_KEY,'done');
+  return queued
+}
+
+async function fetchRemoteLedger(){
+  const q=`trip_id=eq.${encodeURIComponent(TRIP_ID)}&order=created_at.asc`;
+  const [members,expenses,splits,settlements]=await Promise.all([
+    sbRequest('members','GET',q),
+    sbRequest('expenses','GET',q),
+    sbRequest('expense_splits','GET',q),
+    sbRequest('settlements','GET',q)
+  ]);
+  return{members,expenses,splits,settlements}
+}
+
+async function syncLedger(options={}){
+  if(!CLOUD){cloudStatus='local';return}
+  if(ledgerSyncPromise){ledgerSyncAgain=true;return ledgerSyncPromise}
+  const quiet=!!options.quiet;
+  ledgerSyncPromise=(async()=>{
+    if(!quiet){cloudStatus='syncing';renderExpenses()}
+    await flushOutbox();
+    try{
+      let remote=await fetchRemoteLedger();
+      if(await bootstrapLocalLedgerToCloud(remote))remote=await fetchRemoteLedger();
+      const pending=loadOutbox();
+      ledger=pending.length?mergeRemoteWithLocal(remote,pending):remote;
+      saveLocalLedger();
+      cloudStatus=pending.length?'failed':'cloud'
+    }catch(e){
+      cloudStatus='failed';
+      console.warn('Expense cloud sync failed',e)
+    }
+    renderExpenses()
+  })();
+  try{return await ledgerSyncPromise}
+  finally{
+    ledgerSyncPromise=null;
+    if(ledgerSyncAgain){ledgerSyncAgain=false;queueMicrotask(()=>syncLedger({quiet:true}))}
+  }
+}
+
+function scheduleExpenseRealtimeSync(){
+  clearTimeout(expenseRealtimeRefreshTimer);
+  expenseRealtimeRefreshTimer=setTimeout(()=>syncLedger({quiet:true}),180)
+}
+
+function setupExpenseRealtime(){
+  if(!CLOUD||expenseRealtimeStarted)return;
+  expenseRealtimeStarted=true;
+
+  // Reconcile occasionally as a safety net if a mobile browser suspends the
+  // WebSocket while it is in the background.
+  expenseFallbackSyncTimer=setInterval(()=>{
+    if(document.visibilityState==='visible'&&navigator.onLine)syncLedger({quiet:true})
+  },30000);
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState==='visible'&&navigator.onLine)syncLedger({quiet:true})
+  });
+
+  const createClient=globalThis.supabase?.createClient;
+  if(typeof createClient!=='function'){
+    console.warn('Supabase Realtime client did not load; periodic sync remains active.');
+    return
+  }
+  try{
+    expenseRealtimeClient=createClient(CFG.supabase_url,CFG.supabase_key,{
+      auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false},
+      realtime:{params:{eventsPerSecond:10}}
+    });
+    let channel=expenseRealtimeClient.channel(`family-ledger-${encodeURIComponent(TRIP_ID).slice(0,80)}`);
+    // Subscribe per table without a row filter. DELETE payload filters are not
+    // reliable across every Realtime/RLS configuration; the callback never
+    // trusts the payload and always refetches only the configured TRIP_ID.
+    ['members','expenses','expense_splits','settlements'].forEach(table=>{
+      channel=channel.on('postgres_changes',{event:'*',schema:'public',table},scheduleExpenseRealtimeSync)
+    });
+    expenseRealtimeChannel=channel.subscribe(status=>{
+      if(status==='SUBSCRIBED')syncLedger({quiet:true});
+      else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')console.warn('Expense realtime status:',status)
+    });
+    window.addEventListener('beforeunload',()=>{
+      if(expenseRealtimeClient&&expenseRealtimeChannel)expenseRealtimeClient.removeChannel(expenseRealtimeChannel)
+    },{once:true})
+  }catch(e){
+    console.warn('Expense realtime setup failed; periodic sync remains active.',e)
+  }
+}
 async function cloudBatch(ops){if(!CLOUD)return true;ops.forEach(queueMutation);const ok=await flushOutbox();if(!ok)toast(L('queued_offline'));if(currentPage==='expenses')renderExpenses();return ok}
 async function cloudInsert(table,row){return cloudBatch([{table,method:'POST',query:'',body:row}])}
 async function cloudPatch(table,id,row){return cloudBatch([{table,method:'PATCH',query:`id=eq.${encodeURIComponent(id)}&trip_id=eq.${encodeURIComponent(TRIP_ID)}`,body:row}])}
@@ -37,7 +149,7 @@ function fxText(n){
 }
 async function loadFx(){const c=cacheRead('chengduFxCnyMyr',12*60*60*1000)||cacheAny('chengduFxCnyMyr');if(c?.rate)fxRate=c.rate;try{const r=await fetch('https://open.er-api.com/v6/latest/CNY'),j=await r.json();if(j?.rates?.MYR){fxRate=Number(j.rates.MYR);cacheWrite('chengduFxCnyMyr',{rate:fxRate})}}catch(e){}if(currentPage==='expenses')renderExpenses()}
 
-const SETTLEMENT_UI_BUILD='v21-expenses-complete-i18n-wallet-arrows';
+const SETTLEMENT_UI_BUILD='v22-supabase-family-realtime';
 let settlementFocusId='';
 const EXPENSE_AVATARS=DATA.avatar_options||[];
 const MEMBER_AVATAR_STORE='chengduMemberAvatarMapV2';
@@ -637,11 +749,11 @@ async function saveMemberSheet(id){
   if(ledger.members.some(m=>m.display_name.toLowerCase()===name.toLowerCase()&&m.id!==id)){toast(L('member_exists'));return}
   if(id){
     const m=member(id);m.display_name=name;m.avatar_index=avatarIndex;saveMemberAvatarChoice(id,avatarIndex);saveLocalLedger();closeExpenseModal();renderExpenses();
-    try{await cloudPatch('members',id,{display_name:name})}catch(e){toast(L('sync_failed'))}
+    try{await cloudPatch('members',id,{display_name:name,avatar_index:avatarIndex})}catch(e){toast(L('sync_failed'))}
   }else{
     const m={id:uid(),trip_id:TRIP_ID,display_name:name,is_active:true,avatar_index:avatarIndex,created_at:new Date().toISOString()};
     ledger.members.push(m);saveMemberAvatarChoice(m.id,avatarIndex);if($('#memberMeInput')?.checked||!meId())store.set('chengduCurrentMember',m.id);saveLocalLedger();closeExpenseModal();renderExpenses();
-    try{await cloudInsert('members',{id:m.id,trip_id:m.trip_id,display_name:m.display_name,is_active:m.is_active,created_at:m.created_at})}catch(e){toast(L('sync_failed'))}
+    try{await cloudInsert('members',cloudMemberRow(m))}catch(e){toast(L('sync_failed'))}
   }
 }
 async function toggleMember(id){const m=member(id);if(!m)return;if(m.id===meId()&&m.is_active!==false){toast(L('cannot_deactivate_me'));return}if(m.is_active!==false&&!confirm(L('confirm_deactivate')))return;m.is_active=m.is_active===false;saveLocalLedger();renderExpenses();try{await cloudPatch('members',id,{is_active:m.is_active})}catch(e){toast(L('sync_failed'))}}
