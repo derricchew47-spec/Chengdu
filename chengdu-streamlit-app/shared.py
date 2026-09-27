@@ -1025,6 +1025,47 @@ button.settlement-person{appearance:none;color:inherit;cursor:pointer}
 .settlement-flow-path{fill:none;stroke:#2d6a4b;stroke-width:2.2;stroke-linecap:round;opacity:.92;transition:stroke-dashoffset .38s cubic-bezier(.22,.78,.25,1);transition-delay:var(--flow-delay);filter:drop-shadow(0 1px 1px rgba(45,106,75,.08))}
 @media(max-width:360px){.settlement-flow-board{gap:34px}.settlement-person{grid-template-columns:34px minmax(0,1fr);min-height:52px}.settlement-flow-avatar{width:34px;height:34px}.settlement-person-chevron,.settlement-receiver-amount{grid-column:2;justify-self:start}.settlement-receiver-amount{margin-top:-3px}}
 
+
+/* ───── Expenses v17 settlement i18n + arrow geometry ───── */
+.settlement-flow-board{
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+  gap:52px!important;
+}
+.settlement-flow-svg{
+  z-index:2!important;
+}
+.settlement-flow-col{
+  z-index:3!important;
+}
+.settlement-flow-path{
+  stroke-width:2.35!important;
+  stroke:#2d6a4b!important;
+  fill:none!important;
+  stroke-linecap:round!important;
+  stroke-linejoin:round!important;
+}
+.settlement-flow-origin{
+  fill:#2d6a4b;
+  opacity:.9;
+}
+.settlement-receiver.linked{
+  transform:none!important;
+  border-color:rgba(45,106,75,.20)!important;
+  box-shadow:0 7px 17px rgba(45,106,75,.08)!important;
+}
+.settlement-receiver.dimmed{opacity:.28!important}
+.settlement-flow-hint{
+  font-size:8px!important;
+  letter-spacing:0!important;
+}
+.settlement-flow-sub{
+  font-size:7.4px!important;
+  color:#89918a!important;
+}
+@media(max-width:380px){
+  .settlement-flow-board{gap:40px!important}
+}
+
 '''
 BODY_OPEN = r'''
 </head>

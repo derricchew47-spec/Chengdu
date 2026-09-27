@@ -309,12 +309,50 @@ function renderRecentExpenses(recent){
       <div class="expense-recent-list">${rows||`<div class="state-card"><h3>${L('no_expenses')}</h3><p>${L('start_today')}</p></div>`}</div>
     </section>`
 }
+
+function settlementText(key,vars={}){
+  const zh={
+    title:'结算建议',
+    detail:'查看详情',
+    settled:'已结清',
+    noBalances:'目前没有需要结清的款项。',
+    payers:'需要付款',
+    receivers:'需要收款',
+    pay:'应付',
+    receive:'应收',
+    tap:'点击左侧成员查看最终转账路径',
+    transfers:'最简结算 {n} 笔',
+    selected:'共需支付 {amount}',
+    transfer:'转账 {amount}'
+  };
+  const en={
+    title:'Settlement suggestions',
+    detail:'View details',
+    settled:'Settled',
+    noBalances:'There are no outstanding balances.',
+    payers:'Needs to pay',
+    receivers:'Needs to receive',
+    pay:'Pay',
+    receive:'Receive',
+    tap:'Tap a payer to view the final transfer paths',
+    transfers:'{n} minimal transfers',
+    selected:'Total to pay {amount}',
+    transfer:'Transfer {amount}'
+  };
+  let s=(lang==='zh'?zh:en)[key]||key;
+  Object.entries(vars).forEach(([k,v])=>s=s.replaceAll(`{${k}}`,String(v)));
+  return s
+}
+
 function renderSettlementSuggestions(transfers){
   if(!transfers.length){
     settlementFocusId='';
     return`<section class="expense-section-card settlement-card settlement-flow-card">
-      <div class="expense-section-head"><h3>✦ ${L('settlement_suggestions')}</h3><button class="expense-section-link" onclick="expenseTab='split';renderExpenses()">${L('view_details')} ›</button></div>
-      <div class="state-card"><h3>${L('settled')}</h3><p>${L('no_balances')}</p></div>
+      <div class="expense-section-head">
+        <h3>✦ ${settlementText('title')}</h3>
+        <button class="expense-section-link" onclick="expenseTab='split';renderExpenses()">${settlementText('detail')} ›</button>
+      </div>
+      <div class="state-card"><h3>${settlementText('settled')}</h3><p>${settlementText('noBalances')}</p></div>
     </section>`
   }
 
@@ -323,19 +361,33 @@ function renderSettlementSuggestions(transfers){
   if(settlementFocusId&&!payerIds.includes(settlementFocusId))settlementFocusId='';
 
   const payerTotals={};
-  payerIds.forEach(id=>payerTotals[id]=Math.round(transfers.filter(x=>x.from===id).reduce((s,x)=>s+Number(x.amount),0)*100)/100);
+  payerIds.forEach(id=>{
+    payerTotals[id]=Math.round(
+      transfers.filter(x=>x.from===id).reduce((s,x)=>s+Number(x.amount),0)*100
+    )/100
+  });
 
   const receiverTotals={};
-  receiverIds.forEach(id=>receiverTotals[id]=Math.round(transfers.filter(x=>x.to===id).reduce((s,x)=>s+Number(x.amount),0)*100)/100);
+  receiverIds.forEach(id=>{
+    receiverTotals[id]=Math.round(
+      transfers.filter(x=>x.to===id).reduce((s,x)=>s+Number(x.amount),0)*100
+    )/100
+  });
 
   const focused=settlementFocusId?transfers.filter(x=>x.from===settlementFocusId):[];
   const focusedByReceiver={};
   focused.forEach(x=>focusedByReceiver[x.to]=Number(x.amount));
   const focusedTotal=Math.round(focused.reduce((s,x)=>s+Number(x.amount),0)*100)/100;
 
-  const payerRows=payerIds.map(id=>`<button class="settlement-person settlement-payer ${settlementFocusId===id?'active':''}" data-settlement-payer="${esc(id)}" onclick="selectSettlementPayer('${esc(id)}')">
+  const payerRows=payerIds.map(id=>`
+    <button class="settlement-person settlement-payer ${settlementFocusId===id?'active':''}"
+            data-settlement-payer="${esc(id)}"
+            onclick="selectSettlementPayer('${esc(id)}')">
       ${avatarHTML(id,'settlement-flow-avatar')}
-      <span class="settlement-person-copy"><b>${esc(memberName(id))}</b><small>${L('settlement_pay')} <strong>${money(payerTotals[id])}</strong></small></span>
+      <span class="settlement-person-copy">
+        <b>${esc(memberName(id))}</b>
+        <small>${settlementText('pay')} <strong>${money(payerTotals[id])}</strong></small>
+      </span>
       <span class="settlement-person-chevron">›</span>
     </button>`).join('');
 
@@ -343,31 +395,49 @@ function renderSettlementSuggestions(transfers){
     const linked=settlementFocusId&&focusedByReceiver[id]!=null;
     const dimmed=settlementFocusId&&!linked;
     const amount=linked?focusedByReceiver[id]:receiverTotals[id];
-    return`<div class="settlement-person settlement-receiver ${linked?'linked':''} ${dimmed?'dimmed':''}" data-settlement-receiver="${esc(id)}">
-      ${avatarHTML(id,'settlement-flow-avatar')}
-      <span class="settlement-person-copy"><b>${esc(memberName(id))}</b><small>${linked?L('settlement_transfer_amount',{amount:money(amount)}):`${L('settlement_receive')} ${money(amount)}`}</small></span>
-      <span class="settlement-receiver-amount">${money(amount)}</span>
-    </div>`
+    return`
+      <div class="settlement-person settlement-receiver ${linked?'linked':''} ${dimmed?'dimmed':''}"
+           data-settlement-receiver="${esc(id)}">
+        ${avatarHTML(id,'settlement-flow-avatar')}
+        <span class="settlement-person-copy">
+          <b>${esc(memberName(id))}</b>
+          <small>${linked
+            ? settlementText('transfer',{amount:money(amount)})
+            : `${settlementText('receive')} ${money(amount)}`}</small>
+        </span>
+        <span class="settlement-receiver-amount">${money(amount)}</span>
+      </div>`
   }).join('');
 
   return`<section class="expense-section-card settlement-card settlement-flow-card">
-      <div class="expense-section-head">
-        <div><h3>✦ ${L('settlement_suggestions')}</h3><small class="settlement-flow-sub">${L('settlement_transfer_count',{n:transfers.length})}</small></div>
-        <button class="expense-section-link" onclick="expenseTab='split';renderExpenses()">${L('view_details')} ›</button>
+    <div class="expense-section-head">
+      <div>
+        <h3>✦ ${settlementText('title')}</h3>
+        <small class="settlement-flow-sub">${settlementText('transfers',{n:transfers.length})}</small>
       </div>
-      <div class="settlement-flow-hint">${settlementFocusId?L('settlement_selected_total',{amount:money(focusedTotal)}):L('settlement_tap_hint')}</div>
-      <div class="settlement-flow-board" id="settlementFlowBoard">
-        <svg class="settlement-flow-svg" id="settlementFlowSvg" aria-hidden="true"></svg>
-        <div class="settlement-flow-col">
-          <div class="settlement-flow-col-title">${L('settlement_payers')} <span>${payerIds.length}</span></div>
-          <div class="settlement-flow-list">${payerRows}</div>
-        </div>
-        <div class="settlement-flow-col">
-          <div class="settlement-flow-col-title">${L('settlement_receivers')} <span>${receiverIds.length}</span></div>
-          <div class="settlement-flow-list">${receiverRows}</div>
-        </div>
+      <button class="expense-section-link" onclick="expenseTab='split';renderExpenses()">${settlementText('detail')} ›</button>
+    </div>
+
+    <div class="settlement-flow-hint">
+      ${settlementFocusId
+        ? settlementText('selected',{amount:money(focusedTotal)})
+        : settlementText('tap')}
+    </div>
+
+    <div class="settlement-flow-board" id="settlementFlowBoard">
+      <svg class="settlement-flow-svg" id="settlementFlowSvg" aria-hidden="true"></svg>
+
+      <div class="settlement-flow-col settlement-flow-left">
+        <div class="settlement-flow-col-title">${settlementText('payers')} <span>${payerIds.length}</span></div>
+        <div class="settlement-flow-list">${payerRows}</div>
       </div>
-    </section>`
+
+      <div class="settlement-flow-col settlement-flow-right">
+        <div class="settlement-flow-col-title">${settlementText('receivers')} <span>${receiverIds.length}</span></div>
+        <div class="settlement-flow-list">${receiverRows}</div>
+      </div>
+    </div>
+  </section>`
 }
 
 function selectSettlementPayer(id){
@@ -392,23 +462,46 @@ function bindSettlementFlow(){
   svg.setAttribute('height',br.height);
 
   const pr=payer.getBoundingClientRect();
-  const sx=pr.right-br.left-3;
-  const sy=pr.top-br.top+pr.height/2;
+  const centerY=pr.top-br.top+pr.height/2;
+  const baseStartX=pr.right-br.left+1;
 
-  let paths='';
-  links.forEach((link,idx)=>{
+  const defs=`<defs>
+    <marker id="settlementArrowHead" markerWidth="8" markerHeight="8" refX="7" refY="4"
+            orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,4 L0,8 z" fill="#2d6a4b"></path>
+    </marker>
+  </defs>`;
+
+  const count=links.length;
+  const fanGap=Math.min(8,Math.max(4,pr.height/(count+2)));
+
+  const paths=links.map((link,idx)=>{
     const target=board.querySelector(`[data-settlement-receiver="${CSS.escape(link.to)}"]`);
-    if(!target)return;
-    const tr=target.getBoundingClientRect();
-    const ex=tr.left-br.left+3;
-    const ey=tr.top-br.top+tr.height/2;
-    const span=Math.max(28,ex-sx);
-    const c1=sx+span*.35;
-    const c2=ex-span*.35;
-    paths+=`<path class="settlement-flow-path" d="M ${sx} ${sy} C ${c1} ${sy}, ${c2} ${ey}, ${ex} ${ey}" marker-end="url(#settlementArrowHead)" style="--flow-delay:${idx*35}ms"></path>`;
-  });
+    if(!target)return'';
 
-  svg.innerHTML=`<defs><marker id="settlementArrowHead" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#2d6a4b"></path></marker></defs>${paths}`;
+    const tr=target.getBoundingClientRect();
+    const endX=tr.left-br.left-2;
+    const endY=tr.top-br.top+tr.height/2;
+
+    // Fan the start points slightly so multiple arrows do not share one trunk.
+    const startY=centerY+(idx-(count-1)/2)*fanGap;
+    const startX=baseStartX;
+
+    const horizontal=Math.max(38,endX-startX);
+    const bend=Math.min(92,Math.max(38,horizontal*.42));
+    const c1x=startX+bend;
+    const c2x=endX-bend;
+
+    return`<g class="settlement-flow-link">
+      <circle class="settlement-flow-origin" cx="${startX}" cy="${startY}" r="2.6"></circle>
+      <path class="settlement-flow-path"
+            d="M ${startX} ${startY} C ${c1x} ${startY}, ${c2x} ${endY}, ${endX} ${endY}"
+            marker-end="url(#settlementArrowHead)"
+            style="--flow-delay:${idx*30}ms"></path>
+    </g>`
+  }).join('');
+
+  svg.innerHTML=defs+paths;
 
   requestAnimationFrame(()=>{
     svg.querySelectorAll('.settlement-flow-path').forEach(path=>{
@@ -416,7 +509,7 @@ function bindSettlementFlow(){
       path.style.strokeDasharray=String(len);
       path.style.strokeDashoffset=String(len);
       path.getBoundingClientRect();
-      path.style.strokeDashoffset='0';
+      path.style.strokeDashoffset='0'
     })
   })
 }
