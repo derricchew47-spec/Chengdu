@@ -55,7 +55,69 @@ function expenseThumb(category){
   return EXPENSE_AVATARS[idx]?.src||''
 }
 function setExpenseFocus(k){expenseFocus=k;renderExpenses()}
-function toggleMemberBalances(){memberBalancesExpanded=!memberBalancesExpanded;renderExpenses()}
+function toggleMemberBalances(){
+  const card=$('#memberBalanceCard');
+  const stage=$('#memberBalanceStage');
+  if(!card||!stage){memberBalancesExpanded=!memberBalancesExpanded;renderExpenses();return}
+
+  const items=[...stage.querySelectorAll('.member-morph-item')];
+  const firstRects=new Map(items.map(el=>[el.dataset.memberId,el.getBoundingClientRect()]));
+  const startH=card.getBoundingClientRect().height;
+
+  memberBalancesExpanded=!memberBalancesExpanded;
+  card.classList.toggle('expanded',memberBalancesExpanded);
+  card.setAttribute('aria-expanded',memberBalancesExpanded?'true':'false');
+
+  const toggleText=$('#memberBalanceToggleText');
+  if(toggleText)toggleText.textContent=L(memberBalancesExpanded?'collapse':'view_all');
+  const toggleArrow=$('#memberBalanceToggleArrow');
+  if(toggleArrow)toggleArrow.textContent=memberBalancesExpanded?'⌃':'›';
+
+  // Force the browser to lay out the new state, then FLIP the same avatar nodes.
+  card.getBoundingClientRect();
+  const endH=card.getBoundingClientRect().height;
+
+  card.style.height=`${startH}px`;
+  card.style.overflow='hidden';
+  requestAnimationFrame(()=>{
+    card.style.transition='height .42s cubic-bezier(.22,.78,.25,1),box-shadow .3s ease';
+    card.style.height=`${endH}px`;
+  });
+
+  items.forEach((el,i)=>{
+    const first=firstRects.get(el.dataset.memberId);
+    const last=el.getBoundingClientRect();
+    if(!first||!last.width)return;
+    const dx=first.left-last.left;
+    const dy=first.top-last.top;
+    const sx=first.width/last.width;
+    const sy=first.height/last.height;
+
+    el.animate(
+      [
+        {transform:`translate3d(${dx}px,${dy}px,0) scale(${sx},${sy})`, transformOrigin:'center center'},
+        {transform:'translate3d(0,0,0) scale(1)', transformOrigin:'center center'}
+      ],
+      {duration:430,easing:'cubic-bezier(.22,.78,.25,1)',fill:'both'}
+    );
+
+    const meta=el.querySelector('.member-morph-meta');
+    if(meta){
+      meta.animate(
+        memberBalancesExpanded
+          ? [{opacity:0,transform:'translateY(-5px)'},{opacity:1,transform:'translateY(0)'}]
+          : [{opacity:1,transform:'translateY(0)'},{opacity:0,transform:'translateY(-5px)'}],
+        {duration:memberBalancesExpanded?260:180,delay:memberBalancesExpanded?120:0,easing:'ease-out',fill:'both'}
+      )
+    }
+  });
+
+  setTimeout(()=>{
+    card.style.height='';
+    card.style.overflow='';
+    card.style.transition='';
+  },460)
+}
 function expenseDate(e){
   const d=new Date(e.created_at);if(Number.isNaN(d.getTime()))return'';
   return lang==='zh'?`${d.getMonth()+1}月${d.getDate()}日`:d.toLocaleDateString('en',{month:'short',day:'numeric'})
@@ -136,20 +198,31 @@ function renderExpenseOverview(){
     ${!me?`<div class="local-note">${L('no_me')}</div>`:''}`
 }
 function renderMemberBalanceCard(ms,stats,nonZero){
-  const overlap=ms.map(m=>avatarHTML(m.id)).join('');
-  const grid=ms.map(m=>{
+  const members=ms.map((m,i)=>{
     const net=stats[m.id]?.net||0;
     const cls=Math.abs(net)<.005?'balance-zero':net>0?'balance-positive':'balance-negative';
     const value=Math.abs(net)<.005?L('settled_short'):`${net>0?'+':'−'}${money(Math.abs(net)).replace('¥ ','¥')}`;
-    return`<div class="member-balance-person">${avatarHTML(m.id,'')}<b>${esc(m.display_name)}</b><span class="${cls}">${value}</span></div>`
+    return`<div class="member-morph-item" data-member-id="${esc(m.id)}" style="--member-i:${i}">
+      ${avatarHTML(m.id,'member-morph-avatar')}
+      <div class="member-morph-meta"><b>${esc(m.display_name)}</b><span class="${cls}">${value}</span></div>
+    </div>`
   }).join('');
-  return`<section class="expense-section-card member-balance-card ${memberBalancesExpanded?'expanded':''}" onclick="toggleMemberBalances()">
-      <div class="expense-section-head"><h3>${L('member_balance')}</h3><button class="expense-section-link" onclick="event.stopPropagation();toggleMemberBalances()">${L(memberBalancesExpanded?'collapse':'view_all')} ${memberBalancesExpanded?'⌃':'›'}</button></div>
-      <div class="member-balance-summary">
-        <div class="member-overlap">${overlap}</div>
-        <div class="member-balance-summary-copy"><b>${L('members_count',{n:ms.length})}</b><small>${L('balances_count',{n:nonZero})}</small></div>
+
+  return`<section id="memberBalanceCard" class="expense-section-card member-balance-card member-balance-morph ${memberBalancesExpanded?'expanded':''}" aria-expanded="${memberBalancesExpanded?'true':'false'}" onclick="toggleMemberBalances()">
+      <div class="expense-section-head">
+        <h3>${L('member_balance')}</h3>
+        <button class="expense-section-link" onclick="event.stopPropagation();toggleMemberBalances()">
+          <span id="memberBalanceToggleText">${L(memberBalancesExpanded?'collapse':'view_all')}</span>
+          <span id="memberBalanceToggleArrow">${memberBalancesExpanded?'⌃':'›'}</span>
+        </button>
       </div>
-      <div class="member-balance-grid-wrap"><div class="member-balance-grid-clip"><div class="member-balance-grid">${grid}</div></div></div>
+      <div class="member-balance-stage-row">
+        <div id="memberBalanceStage" class="member-balance-stage">${members}</div>
+        <div class="member-balance-summary-copy">
+          <b>${L('members_count',{n:ms.length})}</b>
+          <small>${L('balances_count',{n:nonZero})}</small>
+        </div>
+      </div>
     </section>`
 }
 function renderRecentExpenses(recent){
