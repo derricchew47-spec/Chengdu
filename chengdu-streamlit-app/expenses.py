@@ -34,12 +34,39 @@ function fxText(n){return fxRate?`RM ${(Number(n)*fxRate).toFixed(2)}`:''}
 async function loadFx(){const c=cacheRead('chengduFxCnyMyr',12*60*60*1000)||cacheAny('chengduFxCnyMyr');if(c?.rate)fxRate=c.rate;try{const r=await fetch('https://open.er-api.com/v6/latest/CNY'),j=await r.json();if(j?.rates?.MYR){fxRate=Number(j.rates.MYR);cacheWrite('chengduFxCnyMyr',{rate:fxRate})}}catch(e){}if(currentPage==='expenses')renderExpenses()}
 
 const EXPENSE_AVATARS=DATA.avatar_options||[];
+const MEMBER_AVATAR_STORE='chengduMemberAvatarMapV2';
+
+function loadMemberAvatarMap(){
+  try{
+    const raw=JSON.parse(store.get(MEMBER_AVATAR_STORE)||'{}');
+    return raw&&typeof raw==='object'?raw:{}
+  }catch(e){return{}}
+}
+function saveMemberAvatarChoice(id,index){
+  if(!id)return;
+  const map=loadMemberAvatarMap();
+  map[id]=Math.max(0,Math.min(EXPENSE_AVATARS.length-1,Number(index)||0));
+  store.set(MEMBER_AVATAR_STORE,JSON.stringify(map))
+}
+function removeMemberAvatarChoice(id){
+  const map=loadMemberAvatarMap();
+  delete map[id];
+  store.set(MEMBER_AVATAR_STORE,JSON.stringify(map))
+}
 
 function avatarIndexForMember(m){
-  if(m&&Number.isInteger(m.avatar_index)&&m.avatar_index>=0&&m.avatar_index<EXPENSE_AVATARS.length)return m.avatar_index;
-  const s=String(m?.id||m?.display_name||'member');
+  if(!m)return 0;
+  const map=loadMemberAvatarMap();
+  if(Number.isInteger(map[m.id])&&map[m.id]>=0&&map[m.id]<EXPENSE_AVATARS.length)return map[m.id];
+  if(Number.isInteger(m.avatar_index)&&m.avatar_index>=0&&m.avatar_index<EXPENSE_AVATARS.length){
+    saveMemberAvatarChoice(m.id,m.avatar_index);
+    return m.avatar_index
+  }
+  const s=String(m.id||m.display_name||'member');
   let h=0;for(let i=0;i<s.length;i++)h=((h<<5)-h+s.charCodeAt(i))|0;
-  return Math.abs(h)%Math.max(1,EXPENSE_AVATARS.length)
+  const idx=Math.abs(h)%Math.max(1,EXPENSE_AVATARS.length);
+  saveMemberAvatarChoice(m.id,idx);
+  return idx
 }
 function memberAvatar(id){
   const m=member(id),opt=EXPENSE_AVATARS[avatarIndexForMember(m)];
@@ -242,6 +269,7 @@ function renderMemberBalanceCard(ms,stats,nonZero){
       <div class="expense-section-head">
         <h3>${L('member_balance')}</h3>
         <div class="member-balance-actions">
+          <button class="member-manage-btn" onclick="event.stopPropagation();openMemberManager()">${L('manage_members')}</button>
           <button class="member-add-btn" onclick="event.stopPropagation();openMemberSheet()">＋ ${L('add_member')}</button>
           <button class="expense-section-link" onclick="event.stopPropagation();toggleMemberBalances()">
             <span id="memberBalanceToggleText">${L(memberBalancesExpanded?'collapse':'view_all')}</span>
@@ -307,6 +335,78 @@ function renderMembers(){
       <div class="row-actions">${m.is_active!==false&&m.id!==meId()?`<button onclick="chooseMe('${m.id}')" aria-label="${L('this_is_me')}">${icon('check','sm')}</button>`:''}<button onclick="openMemberSheet('${m.id}')" aria-label="${L('rename')}">${icon('edit','sm')}</button><button onclick="toggleMember('${m.id}')" aria-label="${L(m.is_active===false?'activate':'deactivate')}">${m.is_active===false?'↺':icon('users','sm')}</button></div></div>`).join('');
   return`${cloudMiniStatus()}<section class="expense-section-card"><div class="expense-section-head"><h3>${L('members')}</h3><button class="expense-section-link" onclick="expenseTab='overview';renderExpenses()">‹ ${L('overview')}</button></div><button class="primary-btn full" onclick="openMemberSheet()">＋ ${L('add_member')}</button><div class="member-list" style="margin-top:9px">${rows||`<div class="state-card"><h3>${L('member_needed')}</h3></div>`}</div></section>`
 }
+
+function memberHasReferences(id){
+  return ledger.expenses.some(e=>e.paid_by_member_id===id)
+    || ledger.splits.some(s=>s.member_id===id)
+    || ledger.settlements.some(s=>s.from_member_id===id||s.to_member_id===id)
+}
+function memberManagerRows(){
+  if(!ledger.members.length)return`<div class="state-card"><h3>${L('no_member_records')}</h3></div>`;
+  return ledger.members.map(m=>{
+    const active=m.is_active!==false;
+    const isMe=m.id===meId();
+    return`<div class="member-manage-row ${active?'':'inactive'}">
+      ${avatarHTML(m.id,'member-manage-avatar')}
+      <div class="member-manage-copy">
+        <b>${esc(m.display_name)} ${isMe?`<span class="me-badge">${L('this_is_me')}</span>`:''}</b>
+        <small>${active?L('manage_hint'):L('inactive_label')}</small>
+      </div>
+      <div class="member-manage-actions">
+        ${active&&!isMe?`<button class="member-action me" onclick="chooseMeFromManager('${m.id}')">${L('this_is_me')}</button>`:''}
+        <button class="member-action" onclick="editMemberFromManager('${m.id}')">${L('edit_member')}</button>
+        <button class="member-action" onclick="toggleMemberFromManager('${m.id}')">${L(active?'deactivate_member':'reactivate_member')}</button>
+        <button class="member-action danger" onclick="removeMember('${m.id}')">${L('remove_member')}</button>
+      </div>
+    </div>`
+  }).join('')
+}
+function openMemberManager(){
+  showExpenseModal(`<div class="sheet-title"><div><h2>${L('member_management')}</h2><p>${L('manage_hint')}</p></div><button class="sheet-close" onclick="closeExpenseModal()">×</button></div>
+    <div class="member-manager-list">${memberManagerRows()}</div>
+    <button class="primary-btn full" onclick="closeExpenseModal();setTimeout(()=>openMemberSheet(),70)">＋ ${L('add_member')}</button>`)
+}
+function refreshMemberManager(){
+  const list=$('.member-manager-list');
+  if(list)list.innerHTML=memberManagerRows()
+}
+function chooseMeFromManager(id){
+  store.set('chengduCurrentMember',id);
+  refreshMemberManager();
+  renderExpenses()
+}
+function editMemberFromManager(id){
+  closeExpenseModal();
+  setTimeout(()=>openMemberSheet(id),70)
+}
+async function toggleMemberFromManager(id){
+  const m=member(id);if(!m)return;
+  if(m.id===meId()&&m.is_active!==false){toast(L('cannot_deactivate_me'));return}
+  m.is_active=m.is_active===false;
+  saveLocalLedger();
+  refreshMemberManager();
+  renderExpenses();
+  toast(L(m.is_active?'member_reactivated':'member_deactivated'));
+  try{await cloudPatch('members',id,{is_active:m.is_active})}catch(e){toast(L('sync_failed'))}
+}
+async function removeMember(id){
+  const m=member(id);if(!m)return;
+  if(id===meId()){toast(L('remove_current_member'));return}
+  if(memberHasReferences(id)){toast(L('remove_member_used'));return}
+  if(!confirm(L('confirm_remove_member',{name:m.display_name})))return;
+
+  ledger.members=ledger.members.filter(x=>x.id!==id);
+  removeMemberAvatarChoice(id);
+  saveLocalLedger();
+  refreshMemberManager();
+  renderExpenses();
+  toast(L('member_removed'));
+
+  try{
+    await cloudDelete('members',`id=eq.${encodeURIComponent(id)}&trip_id=eq.${encodeURIComponent(TRIP_ID)}`)
+  }catch(e){toast(L('sync_failed'))}
+}
+
 function chooseMe(id){store.set('chengduCurrentMember',id);renderExpenses()}
 
 function avatarPickerHTML(selected){
@@ -326,11 +426,11 @@ async function saveMemberSheet(id){
   if(!name){input.focus();return}
   if(ledger.members.some(m=>m.display_name.toLowerCase()===name.toLowerCase()&&m.id!==id)){toast(L('member_exists'));return}
   if(id){
-    const m=member(id);m.display_name=name;m.avatar_index=avatarIndex;saveLocalLedger();closeExpenseModal();renderExpenses();
+    const m=member(id);m.display_name=name;m.avatar_index=avatarIndex;saveMemberAvatarChoice(id,avatarIndex);saveLocalLedger();closeExpenseModal();renderExpenses();
     try{await cloudPatch('members',id,{display_name:name})}catch(e){toast(L('sync_failed'))}
   }else{
     const m={id:uid(),trip_id:TRIP_ID,display_name:name,is_active:true,avatar_index:avatarIndex,created_at:new Date().toISOString()};
-    ledger.members.push(m);if($('#memberMeInput')?.checked||!meId())store.set('chengduCurrentMember',m.id);saveLocalLedger();closeExpenseModal();renderExpenses();
+    ledger.members.push(m);saveMemberAvatarChoice(m.id,avatarIndex);if($('#memberMeInput')?.checked||!meId())store.set('chengduCurrentMember',m.id);saveLocalLedger();closeExpenseModal();renderExpenses();
     try{await cloudInsert('members',{id:m.id,trip_id:m.trip_id,display_name:m.display_name,is_active:m.is_active,created_at:m.created_at})}catch(e){toast(L('sync_failed'))}
   }
 }
