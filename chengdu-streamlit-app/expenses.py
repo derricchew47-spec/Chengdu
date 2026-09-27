@@ -86,7 +86,7 @@ function cloudMiniStatus(){
 }
 function expenseShell(inner){
   const members=activeMembers();
-  const panda=DATA.images.panda_bamboo||DATA.images.panda_portrait||'';
+  const panda=DATA.expense_hero||DATA.images.panda_bamboo||DATA.images.panda_portrait||'';
   return`<div class="expenses-hero-head" style="--expense-panda:url('${panda}')">
       <div class="expenses-hero-title"><h1>${L('expenses_title')}</h1><p>${L('trip_expense_sub',{n:members.length||8})}</p></div>
       <button class="expense-refresh" onclick="syncLedger()" aria-label="${L('refresh')}">${icon('refresh','sm')}</button>
