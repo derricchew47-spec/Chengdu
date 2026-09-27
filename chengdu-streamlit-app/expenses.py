@@ -33,7 +33,7 @@ function ledgerStats(){const stats={};ledger.members.forEach(m=>stats[m.id]={pai
 function fxText(n){return fxRate?`RM ${(Number(n)*fxRate).toFixed(2)}`:''}
 async function loadFx(){const c=cacheRead('chengduFxCnyMyr',12*60*60*1000)||cacheAny('chengduFxCnyMyr');if(c?.rate)fxRate=c.rate;try{const r=await fetch('https://open.er-api.com/v6/latest/CNY'),j=await r.json();if(j?.rates?.MYR){fxRate=Number(j.rates.MYR);cacheWrite('chengduFxCnyMyr',{rate:fxRate})}}catch(e){}if(currentPage==='expenses')renderExpenses()}
 
-const SETTLEMENT_UI_BUILD='v19-strict-i18n-clean-arrows';
+const SETTLEMENT_UI_BUILD='v20-lines-only';
 let settlementFocusId='';
 const EXPENSE_AVATARS=DATA.avatar_options||[];
 const MEMBER_AVATAR_STORE='chengduMemberAvatarMapV2';
@@ -475,14 +475,6 @@ function bindSettlementFlow(){
   const centerY=pr.top-br.top+pr.height/2;
   const baseStartX=pr.right-br.left+1;
 
-  const defs=`<defs>
-    <marker id="settlementArrowHead" viewBox="0 0 10 10"
-            markerWidth="10" markerHeight="10" refX="10" refY="5"
-            orient="auto" markerUnits="userSpaceOnUse" overflow="visible">
-      <path d="M0,0 L10,5 L0,10 Z" fill="#2d6a4b"></path>
-    </marker>
-  </defs>`;
-
   const count=links.length;
   const fanGap=Math.min(8,Math.max(4,pr.height/(count+2)));
 
@@ -491,9 +483,7 @@ function bindSettlementFlow(){
     if(!target)return'';
 
     const tr=target.getBoundingClientRect();
-    // The marker tip is anchored at refX=10, so this coordinate is the exact
-    // visible tip. End on the receiver's left border, never inside the card or
-    // in the gap before it.
+    // End the connection line exactly on the receiver's left border.
     const endX=tr.left-br.left;
     const endY=tr.top-br.top+tr.height/2;
 
@@ -512,12 +502,11 @@ function bindSettlementFlow(){
       <circle class="settlement-flow-origin" cx="${startX}" cy="${startY}" r="2.6"></circle>
       <path class="settlement-flow-path"
             d="M ${startX} ${startY} C ${c1x} ${startY}, ${c2x} ${endY}, ${endX} ${endY}"
-            marker-end="url(#settlementArrowHead)"
             style="--flow-delay:${idx*30}ms"></path>
     </g>`
   }).join('');
 
-  svg.innerHTML=defs+paths;
+  svg.innerHTML=paths;
 
   requestAnimationFrame(()=>{
     svg.querySelectorAll('.settlement-flow-path').forEach(path=>{
