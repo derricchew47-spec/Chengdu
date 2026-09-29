@@ -14,17 +14,17 @@ FOODS = [
 ]
 
 JAVASCRIPT = r'''/* ───── Food ───── */
-function foodQueryText(){
-  const a=`(around:${Math.round(foodRadius*1000)},${userLocation.lat},${userLocation.lon})`;
+function foodQueryText(category=foodCategory,radius=foodRadius){
+  const a=`(around:${Math.round(radius*1000)},${userLocation.lat},${userLocation.lon})`;
   let s='';
-  if(foodCategory==='coffee')s=`nwr["amenity"="cafe"]${a};`;
-  else if(foodCategory==='dessert')s=`nwr["amenity"~"ice_cream|cafe"]["cuisine"~"dessert|ice_cream|cake|bakery",i]${a};`;
-  else if(foodCategory==='hotpot')s=`nwr["amenity"="restaurant"]["cuisine"~"hot_pot|hotpot",i]${a};`;
-  else if(foodCategory==='noodles')s=`nwr["amenity"~"restaurant|fast_food"]["cuisine"~"noodle|ramen|noodles",i]${a};`;
-  else if(foodCategory==='sichuan')s=`nwr["amenity"="restaurant"]["cuisine"~"sichuan|chinese",i]${a};`;
-  else if(foodCategory==='snacks')s=`nwr["amenity"~"fast_food|food_court"]${a};`;
+  if(category==='coffee')s=`nwr["amenity"="cafe"]${a};`;
+  else if(category==='dessert')s=`nwr["amenity"~"ice_cream|cafe"]["cuisine"~"dessert|ice_cream|cake|bakery",i]${a};`;
+  else if(category==='hotpot')s=`nwr["amenity"="restaurant"]["cuisine"~"hot_pot|hotpot",i]${a};`;
+  else if(category==='noodles')s=`nwr["amenity"~"restaurant|fast_food"]["cuisine"~"noodle|ramen|noodles",i]${a};`;
+  else if(category==='sichuan')s=`nwr["amenity"="restaurant"]["cuisine"~"sichuan|chinese",i]${a};`;
+  else if(category==='snacks')s=`nwr["amenity"~"fast_food|food_court"]${a};`;
   else s=`nwr["amenity"~"restaurant|fast_food|cafe|food_court|ice_cream"]${a};`;
-  return`[out:json][timeout:20];(${s});out center tags;`
+  return`[out:json][timeout:18];(${s});out center tags 240;`
 }
 async function loadFoodPois(force=false){
   if(!userLocation)return;

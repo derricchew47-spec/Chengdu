@@ -1081,8 +1081,31 @@ BODY_SHELL = r'''
     <section id="expenses" class="page"></section>
   </main>
   <nav class="bottom-nav" aria-label="Main navigation"></nav>
+  <button class="tutorial-help" id="tutorialHelp" onclick="restartOnboarding()" aria-label="新手教程">?</button>
+  <div class="onboarding-layer" id="onboardingLayer" aria-live="polite"></div>
 </div>
 
+'''
+ONBOARDING_CSS = r'''
+<style>
+.tutorial-help{position:fixed;z-index:190;top:max(15px,env(safe-area-inset-top));right:max(14px,calc((100vw - min(100vw,460px))/2 + 14px));width:34px;height:34px;border:1px solid rgba(45,106,75,.18);border-radius:50%;background:rgba(255,255,255,.92);color:#2d6a4b;font:700 16px/1 Georgia,serif;box-shadow:0 6px 18px rgba(29,71,51,.12);cursor:pointer}
+.onboarding-layer{position:fixed;z-index:410;inset:0;display:none;align-items:flex-end;justify-content:center;padding:18px 14px calc(var(--nav-h) + env(safe-area-inset-bottom) + 12px);pointer-events:none}
+.onboarding-layer.active{display:flex}
+.onboarding-layer.center{align-items:center;padding-bottom:18px}
+.onboarding-layer.form-mode{align-items:flex-start;padding-top:max(12px,env(safe-area-inset-top));padding-bottom:0}
+.onboarding-scrim{position:absolute;inset:0;background:rgba(18,31,24,.52);backdrop-filter:blur(4px);pointer-events:auto}
+.onboarding-card{position:relative;width:min(100%,420px);border:1px solid rgba(255,255,255,.75);border-radius:27px;background:#fffdf7;padding:21px 19px 18px;color:#1d3027;box-shadow:0 24px 70px rgba(15,44,31,.28);pointer-events:auto;animation:onboardUp .3s ease both}
+.onboarding-language{text-align:center;padding:27px 19px 21px}
+.onboarding-eyebrow{margin:0 0 8px;color:#2d6a4b;font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}
+.onboarding-card h2{margin:0 0 8px;font:700 27px/1.16 Georgia,'Noto Serif SC',serif;color:#163c2c}
+.onboarding-card p{margin:0;color:#65746c;font-size:13px;line-height:1.65}
+.onboarding-progress{display:flex;gap:5px;margin:15px 0 13px}.onboarding-progress i{display:block;width:18px;height:3px;border-radius:9px;background:#dce5df}.onboarding-progress i.on{background:#2d6a4b}
+.onboarding-actions{display:flex;gap:9px;margin-top:17px}.onboarding-actions button{flex:1;min-height:44px;border-radius:14px;border:1px solid #dbe5df;background:#f5f7f3;color:#2d473b;font-weight:750;cursor:pointer}.onboarding-actions .primary{border-color:#2d6a4b;background:#2d6a4b;color:white}
+.onboarding-language-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px}.onboarding-language-grid button{min-height:92px;border:1px solid #d7e2dc;border-radius:18px;background:#f6f8f4;color:#204233;font-weight:800;cursor:pointer}.onboarding-language-grid button span{display:block;margin-top:6px;color:#718078;font-size:11px;font-weight:500}.onboarding-skip{display:block;margin:13px auto 0;border:0;background:transparent;color:#809087;font-size:11px;cursor:pointer}
+.onboarding-coach{position:relative;width:min(94%,420px);margin:0 auto;border:1px solid rgba(45,106,75,.16);border-radius:18px;background:#fffdf7;padding:12px 14px;color:#234436;box-shadow:0 12px 35px rgba(20,55,39,.20);pointer-events:auto;animation:onboardDown .25s ease both}.onboarding-coach b{display:block;margin-bottom:3px;font-size:13px}.onboarding-coach span{display:block;color:#68776f;font-size:11px;line-height:1.5}.onboarding-coach button{position:absolute;right:9px;top:8px;width:28px;height:28px;border:0;border-radius:50%;background:#edf2ee;color:#345b48;cursor:pointer}
+@keyframes onboardUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}@keyframes onboardDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+@media(min-width:461px){.onboarding-layer{left:50%;width:460px;transform:translateX(-50%)}}
+</style>
 '''
 SCRIPT_CORE = r'''<script>
 const DATA=__DATA__;
@@ -1098,7 +1121,7 @@ const I18N={
   nav_home:'首页',nav_food:'美食',nav_expenses:'花费',switch_lang:'切换为英文',
   morning:'早上好，',afternoon:'下午好，',evening:'晚上好，',home_line:'和家人，一起看更大的世界。',hero_1:'成都，',hero_2:'刚刚好。',
   weather_loading:'天气更新中',sunny:'晴',partly:'晴间多云',cloudy:'多云',fog:'雾',rain:'有雨',snow:'有雪',showers:'阵雨',storm:'雷雨',chengdu:'成都',chongqing:'重庆',
-  food_title:'附近美食',food_sub:'我现在在这里，附近有什么值得吃？',search_food:'搜索附近店铺',range:'范围',retry:'重试',location_title:'需要当前位置',location_body:'允许一次定位，才能查找真正位于你附近的店。应用不会持续追踪位置。',locate:'获取当前位置',locating:'正在寻找你的位置…',location_denied:'定位权限未开启',location_denied_body:'请在浏览器设置中允许定位，然后再试一次。',location_insecure:'需要安全连接',location_insecure_body:'请使用 HTTPS，或在本机用 localhost / 127.0.0.1 打开后重试。',location_unavailable:'暂时无法获取位置',location_unavailable_body:'这通常不是因为你不在成都。请确认设备定位已开启，稍后重试。',nearby_services:'附近服务',opens_amap:'点击后自动打开高德',opening_amap:'正在打开高德…',popup_blocked:'浏览器阻止了新窗口，请允许弹出窗口后重试。',
+  food_title:'附近美食',food_sub:'我现在在这里，附近有什么值得吃？',search_food:'搜索附近店铺',range:'范围',retry:'重试',location_title:'需要当前位置',location_body:'点击后浏览器会请求一次定位，并将当前坐标发送给 OpenStreetMap Overpass 的公共主站或备用站，用来查询附近店铺；应用不会持续追踪。',locate:'获取当前位置',locating:'正在寻找你的位置…',location_denied:'定位权限未开启',location_denied_body:'请在浏览器设置中允许定位，然后再试一次。',location_insecure:'需要安全连接',location_insecure_body:'请使用 HTTPS，或在本机用 localhost / 127.0.0.1 打开后重试。',location_unavailable:'暂时无法获取位置',location_unavailable_body:'这通常不是因为你不在成都。请确认设备定位已开启，稍后重试。',nearby_services:'附近服务',opens_amap:'点击后自动打开高德',opening_amap:'正在打开高德…',popup_blocked:'浏览器阻止了新窗口，请允许弹出窗口后重试。',server_search_now:'搜索附近店铺',server_search_hint:'位置已准备好，点击查询附近店铺。',
   all:'全部',sichuan:'川菜',hotpot:'火锅',snacks:'小吃',noodles:'面食',coffee:'咖啡',dessert:'甜品',more:'更多',
   nothing_food:'附近还没找到合适的店。',wider:'换个距离再看看。',service_down:'附近搜索暂时不可用。',cached:'正在显示上次缓存的结果。',smart_score:'推荐分',limited:'数据有限',high_conf:'高可信',open:'营业中',hours_listed:'有营业时间资料',walk:'步行约 {n} 分钟',
   more_recommendations:'更多推荐',sorted_by_score:'按推荐排序',food_categories:'食物类别',category_unknown:'类别资料有限',no_hours:'暂无营业时间资料',hours:'营业时间',data_source:'资料来源',data_status:'数据状态',osm_notice:'资料来自 OpenStreetMap，可能不包含最新菜单、价格或完整营业时间，建议到店前再确认。',open_amap:'在高德地图中打开',
@@ -1119,7 +1142,7 @@ const I18N={
   nav_home:'Home',nav_food:'Food',nav_expenses:'Expenses',switch_lang:'Switch to Chinese',
   morning:'Good morning,',afternoon:'Good afternoon,',evening:'Good evening,',home_line:'See a bigger world, together as a family.',hero_1:'Chengdu.',hero_2:'Just right.',
   weather_loading:'Weather updating',sunny:'Sunny',partly:'Partly cloudy',cloudy:'Cloudy',fog:'Fog',rain:'Rain',snow:'Snow',showers:'Showers',storm:'Thunderstorms',chengdu:'Chengdu',chongqing:'Chongqing',
-  food_title:'Nearby Food',food_sub:'What is worth eating near me right now?',search_food:'Search nearby places',range:'Distance',retry:'Retry',location_title:'Location needed',location_body:'Allow one location check to find places truly near you. The app does not track continuously.',locate:'Use My Location',locating:'Finding your location…',location_denied:'Location permission is off',location_denied_body:'Allow location in your browser settings, then try again.',location_insecure:'Secure connection required',location_insecure_body:'Open the app over HTTPS, or use localhost / 127.0.0.1 when running it locally.',location_unavailable:'Location is temporarily unavailable',location_unavailable_body:'This is not caused by being outside Chengdu. Check that device location is on, then try again.',nearby_services:'Nearby Services',opens_amap:'Tap to open AMap automatically',opening_amap:'Opening AMap…',popup_blocked:'Your browser blocked the new window. Allow pop-ups and try again.',
+  food_title:'Nearby Food',food_sub:'What is worth eating near me right now?',search_food:'Search nearby places',range:'Distance',retry:'Retry',location_title:'Location needed',location_body:'Your browser will request location once and send the current coordinates to a primary or fallback public OpenStreetMap Overpass server to find nearby places. The app does not track continuously.',locate:'Use My Location',locating:'Finding your location…',location_denied:'Location permission is off',location_denied_body:'Allow location in your browser settings, then try again.',location_insecure:'Secure connection required',location_insecure_body:'Open the app over HTTPS, or use localhost / 127.0.0.1 when running it locally.',location_unavailable:'Location is temporarily unavailable',location_unavailable_body:'This is not caused by being outside Chengdu. Check that device location is on, then try again.',nearby_services:'Nearby Services',opens_amap:'Tap to open AMap automatically',opening_amap:'Opening AMap…',popup_blocked:'Your browser blocked the new window. Allow pop-ups and try again.',
   server_search_now:'Search nearby places',server_search_hint:'Location ready. Tap to search nearby places.',
   all:'All',sichuan:'Sichuan',hotpot:'Hot Pot',snacks:'Snacks',noodles:'Noodles',coffee:'Coffee',dessert:'Dessert',more:'More',
   nothing_food:'Nothing suitable nearby yet.',wider:'Try a wider radius.',service_down:'Nearby search is temporarily unavailable.',cached:'Showing the last cached results.',smart_score:'Smart Score',limited:'Limited data',high_conf:'High confidence',open:'Open',hours_listed:'Hours available',walk:'~{n} min walk',
@@ -1258,7 +1281,7 @@ function cacheRead(k,maxAge=30*60*1000){try{const x=JSON.parse(store.get(k)||'nu
 function cacheAny(k){try{const x=JSON.parse(store.get(k)||'null');return x?x.data:null}catch(e){return null}}
 function cacheWrite(k,data){store.set(k,JSON.stringify({ts:Date.now(),data}))}
 function locCache(){return userLocation?`${Math.round(userLocation.lat*500)}:${Math.round(userLocation.lon*500)}`:'none'}
-let foodRequestSeq=0,foodRequestKey='';
+let foodRequestSeq=0,foodRequestKey='',foodRequestAbort=null;
 const LOCATION_MAX_AGE=12*60*1000;
 const locationFresh=()=>!!(userLocation&&locationTimestamp&&Date.now()-locationTimestamp<=LOCATION_MAX_AGE);
 function expireLocationIfNeeded(){if(userLocation&&!locationFresh()){userLocation=null;locationTimestamp=0;geoStatus='idle';foodPois=[];selectedFood=null}}
@@ -1277,23 +1300,51 @@ function foodServerUrl(force=false,poolRadius=foodRadius){
   else u.searchParams.delete('food_refresh');
   return u.toString()
 }
-function requestServerFood(force=false,poolRadius=foodRadius){
+async function requestServerFood(force=false,poolRadius=foodRadius){
   if(!userLocation)return;
-  const href=foodServerUrl(force,poolRadius);
-  if(!href){foodLoading=false;foodError='failed';if(currentPage==='food')renderFood();return}
+  poolRadius=Math.max(.5,Math.min(5,Number(poolRadius)||2));
+  const key=`food:${locCache()}:${poolRadius}:all`,seq=++foodRequestSeq;
+  if(!force){
+    const cached=cacheRead(key);
+    if(cached){foodPoolRadius=poolRadius;foodPois=normalizePois(cached,'food').filter(p=>p.distance<=poolRadius*1000);foodError='';foodLoading=false;if(currentPage==='food')renderFood();return}
+  }
   foodLoading=true;foodError='';
   if(currentPage==='food')renderFood();
-
-  // This function is called from an actual tap/click (search/filter/radius).
-  // A real target=_top link is reliable inside Streamlit's component sandbox.
-  const a=document.createElement('a');
-  a.href=href;
-  a.target='_top';
-  a.rel='noopener';
-  a.style.display='none';
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(()=>a.remove(),1000)
+  if(foodRequestAbort)foodRequestAbort.abort();
+  try{
+    const endpoints=['https://overpass-api.de/api/interpreter','https://overpass.private.coffee/api/interpreter'];
+    let elements=null,lastError=null;
+    for(const endpoint of endpoints){
+      const controller=new AbortController();foodRequestAbort=controller;
+      let timer=0;
+      try{
+        const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{controller.abort();reject(new Error('Overpass timeout'))},12000)});
+        const response=await Promise.race([fetch(endpoint,{
+          method:'POST',
+          headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
+          body:`data=${encodeURIComponent(foodQueryText('all',poolRadius))}`,
+          signal:controller.signal
+        }),timeout]);
+        if(!response.ok)throw new Error(`Overpass ${response.status}`);
+        const data=await Promise.race([response.json(),timeout]);
+        elements=Array.isArray(data.elements)?data.elements:[];
+        break
+      }catch(error){lastError=error}
+      finally{clearTimeout(timer)}
+    }
+    if(elements===null)throw lastError||new Error('Overpass unavailable');
+    if(seq!==foodRequestSeq)return;
+    cacheWrite(key,elements);foodPoolRadius=poolRadius;
+    foodPois=normalizePois(elements,'food').filter(p=>p.distance<=poolRadius*1000);
+    foodError=''
+  }catch(e){
+    if(seq!==foodRequestSeq)return;
+    const stale=cacheAny(key);
+    if(stale){foodPoolRadius=poolRadius;foodPois=normalizePois(stale,'food').filter(p=>p.distance<=poolRadius*1000);foodError='cached'}
+    else{foodPois=[];foodError='failed'}
+  }finally{
+    if(seq===foodRequestSeq){foodLoading=false;if(currentPage==='food')renderFood()}
+  }
 }
 function requestLocation(source='food'){
   const redraw=()=>{if(currentPage==='food')renderFood()};
@@ -1315,10 +1366,8 @@ function requestLocation(source='food'){
     geoStatus='ready';
     store.set('chengduLastLocation',JSON.stringify(userLocation));
     if(source==='amap'){finishAmapOpen();return}
-    // IMPORTANT: do not attempt top-frame navigation inside this async
-    // geolocation callback. Mobile Safari/Streamlit sandbox may block it.
-    // Render a second explicit "search nearby" button instead.
-    redraw()
+    redraw();
+    requestServerFood(false,Math.max(foodRadius,2))
   };
   const failFinal=e=>{
     if(source==='amap')cancelAmapOpen();
@@ -1372,6 +1421,81 @@ function scrollHome(){try{document.scrollingElement.scrollTo({top:0,left:0,behav
 function settleAtTop(){scrollHome();requestAnimationFrame(()=>{scrollHome();requestAnimationFrame(scrollHome)})}
 
 '''
+ONBOARDING_JAVASCRIPT = r'''/* ───── First-run bilingual onboarding ───── */
+const ONBOARDING_KEY='chengduOnboardingV1';
+let onboardingStage='';
+const ONBOARDING_COPY={
+ zh:{
+  eyebrow:'新手引导',choose:'先选择你想使用的语言',choose_sub:'之后仍可在首页右上角随时切换。',
+  welcome:'欢迎来到我们的成都故事',welcome_body:'用两分钟认识行程、美食和家庭共享账本，并亲手完成第一笔记录。',
+  home:'首页 · 每日行程',home_body:'这里会按照旅行日期显示当天安排、天气与下一站。点开行程卡片可以查看详细路线。',
+  food:'美食 · 查找附近',food_body:'到达当地后，进入美食页并允许一次定位，就能按距离和类别寻找附近店铺。',
+  expenses:'花费 · 家庭共享账本',expenses_body:'所有家庭成员会看到同一份账本。先把自己设为成员，再记录第一笔消费。',
+  member:'第一步：把自己加入成员',member_body:'填写你的名字、选择头像，并保留“这是我”的勾选。若名单里已经有你，也可以直接认领。',
+  member_form:'正在添加自己',member_form_body:'填写姓名、选择头像，确认“这是我”已勾选，然后按“保存”。',
+  member_existing:'从名单中找到自己',member_existing_body:'找到你的名字，按“这是我”。如果名单里没有你，请关闭后选择“新增自己”。',
+  expense:'第二步：记录第一笔消费',expense_body:'输入金额，选择付款人和参与成员；默认“平均分”会自动计算每个人应承担的金额。',
+  expense_form:'正在记录第一笔消费',expense_form_body:'填写金额和说明，确认付款人及参与成员，最后按“保存”。',
+  done:'准备完成',done_body:'以后每台设备打开同一个成都 App，新增成员或账单都会同步给家人。右上角的“?”可以随时重看教程。',
+  next:'下一步',back:'上一步',start:'开始看看',skip:'暂时跳过',add_me:'新增自己',already:'我已在名单里',record:'记录第一笔',finish:'开始使用',close:'退出引导'
+ },
+ en:{
+  eyebrow:'QUICK TOUR',choose:'Choose your language first',choose_sub:'You can switch again from the top-right of Home at any time.',
+  welcome:'Welcome to Our Chengdu Story',welcome_body:'Take a two-minute tour of the itinerary, nearby food, and the shared family expense book—then record your first expense.',
+  home:'Home · Daily itinerary',home_body:'See today’s plan, weather, and next stop based on your travel dates. Open an itinerary card for route details.',
+  food:'Food · Find places nearby',food_body:'When you arrive, open Food and allow one location check to find nearby places by distance and category.',
+  expenses:'Expenses · Shared family book',expenses_body:'Everyone sees the same family ledger. First identify yourself as a member, then record your first expense.',
+  member:'Step 1: Add yourself',member_body:'Enter your name, choose an avatar, and keep “This is me” checked. If you are already listed, claim that member instead.',
+  member_form:'Adding yourself',member_form_body:'Enter your name, pick an avatar, confirm “This is me” is checked, then tap Save.',
+  member_existing:'Find yourself in the list',member_existing_body:'Find your name and tap “This is me”. If you are not listed, close this sheet and choose “Add myself”.',
+  expense:'Step 2: Record your first expense',expense_body:'Enter the amount, payer, and participants. “Split equally” calculates everyone’s share automatically.',
+  expense_form:'Recording your first expense',expense_form_body:'Enter an amount and note, confirm payer and participants, then tap Save.',
+  done:'You’re all set',done_body:'From now on, every device opening the same Chengdu App will share new members and expenses. Tap “?” anytime to replay this tour.',
+  next:'Next',back:'Back',start:'Start tour',skip:'Skip for now',add_me:'Add myself',already:'I’m already listed',record:'Record first expense',finish:'Start using the app',close:'Exit tour'
+ }
+};
+const OT=k=>(ONBOARDING_COPY[lang]||ONBOARDING_COPY.zh)[k]||k;
+function onboardingProgress(step){return`<div class="onboarding-progress">${[1,2,3,4,5].map(i=>`<i class="${i<=step?'on':''}"></i>`).join('')}</div>`}
+function onboardingCard(title,body,step,actions,allowSkip=true){return`<div class="onboarding-scrim"></div><section class="onboarding-card"><div class="onboarding-eyebrow">${OT('eyebrow')}</div><h2>${title}</h2><p>${body}</p>${onboardingProgress(step)}<div class="onboarding-actions">${actions}</div>${allowSkip?`<button class="onboarding-skip" onclick="skipOnboarding()">${OT('skip')}</button>`:''}</section>`}
+function onboardingButton(label,action,primary=false){return`<button class="${primary?'primary':''}" onclick="${action}">${label}</button>`}
+function renderOnboarding(){
+  const layer=$('#onboardingLayer'),help=$('#tutorialHelp');if(!layer)return;
+  layer.className='onboarding-layer active';if(help)help.style.display='none';
+  if(onboardingStage==='language'){
+    layer.classList.add('center');layer.innerHTML=`<div class="onboarding-scrim"></div><section class="onboarding-card onboarding-language"><div class="onboarding-eyebrow">WELCOME · 欢迎</div><h2>选择语言<br><span style="font-size:19px">Choose your language</span></h2><p>请先选择引导与 App 的显示语言。<br>Choose the language for the tutorial and app.</p><div class="onboarding-language-grid"><button onclick="chooseOnboardingLanguage('zh')">中文<span>使用中文继续</span></button><button onclick="chooseOnboardingLanguage('en')">English<span>Continue in English</span></button></div></section>`;return
+  }
+  if(onboardingStage==='welcome'){layer.innerHTML=onboardingCard(OT('welcome'),OT('welcome_body'),1,onboardingButton(OT('start'),"onboardingGo('home')",true));return}
+  if(onboardingStage==='home'){showPage('home');layer.innerHTML=onboardingCard(OT('home'),OT('home_body'),1,onboardingButton(OT('back'),"onboardingGo('welcome')")+onboardingButton(OT('next'),"onboardingGo('food')",true));return}
+  if(onboardingStage==='food'){showPage('food');layer.innerHTML=onboardingCard(OT('food'),OT('food_body'),2,onboardingButton(OT('back'),"onboardingGo('home')")+onboardingButton(OT('next'),"onboardingGo('expenses')",true));return}
+  if(onboardingStage==='expenses'){showPage('expenses');expenseTab='overview';renderExpenses();layer.innerHTML=onboardingCard(OT('expenses'),OT('expenses_body'),3,onboardingButton(OT('back'),"onboardingGo('food')")+onboardingButton(OT('next'),"onboardingGo('member')",true));return}
+  if(onboardingStage==='member'){
+    showPage('expenses');expenseTab='members';renderExpenses();
+    const actions=meId()?onboardingButton(OT('next'),"onboardingGo('expense')",true):onboardingButton(OT('already'),"onboardingUseExisting()")+onboardingButton(OT('add_me'),"onboardingAddMember()",true);
+    layer.innerHTML=onboardingCard(OT('member'),OT('member_body'),4,actions);return
+  }
+  if(onboardingStage==='member_form'||onboardingStage==='member_existing'){
+    layer.classList.add('form-mode');const existing=onboardingStage==='member_existing';
+    layer.innerHTML=`<div class="onboarding-coach"><b>${OT(existing?'member_existing':'member_form')}</b><span>${OT(existing?'member_existing_body':'member_form_body')}</span><button onclick="skipOnboarding()" aria-label="${OT('close')}">×</button></div>`;return
+  }
+  if(onboardingStage==='expense'){showPage('expenses');expenseTab='overview';renderExpenses();layer.innerHTML=onboardingCard(OT('expense'),OT('expense_body'),5,onboardingButton(OT('back'),"onboardingGo('member')")+onboardingButton(OT('record'),"onboardingAddExpense()",true));return}
+  if(onboardingStage==='expense_form'){
+    layer.classList.add('form-mode');layer.innerHTML=`<div class="onboarding-coach"><b>${OT('expense_form')}</b><span>${OT('expense_form_body')}</span><button onclick="skipOnboarding()" aria-label="${OT('close')}">×</button></div>`;return
+  }
+  if(onboardingStage==='done'){showPage('expenses');layer.innerHTML=onboardingCard(OT('done'),OT('done_body'),5,onboardingButton(OT('finish'),"finishOnboarding()",true),false)}
+}
+function onboardingGo(stage){onboardingStage=stage;renderOnboarding()}
+function chooseOnboardingLanguage(nextLang){lang=nextLang==='en'?'en':'zh';store.set('chengduLang',lang);applyLanguage();enterApp();onboardingStage='welcome';renderOnboarding()}
+function onboardingAddMember(){onboardingStage='member_form';renderOnboarding();setTimeout(()=>openMemberSheet(),40)}
+function onboardingUseExisting(){onboardingStage='member_existing';renderOnboarding();setTimeout(()=>openMemberManager(),40)}
+function onboardingMemberReady(){if(!onboardingStage.startsWith('member_'))return;closeExpenseModal(true);onboardingStage='expense';renderOnboarding()}
+function onboardingAddExpense(){if(!activeMembers().length){onboardingStage='member';renderOnboarding();return}onboardingStage='expense_form';renderOnboarding();setTimeout(()=>openExpenseSheet(),40)}
+function onboardingExpenseSaved(){if(onboardingStage!=='expense_form')return;onboardingStage='done';renderOnboarding()}
+function finishOnboarding(){store.set(ONBOARDING_KEY,'done');onboardingStage='';const layer=$('#onboardingLayer');if(layer){layer.className='onboarding-layer';layer.innerHTML=''}const help=$('#tutorialHelp');if(help){help.style.display='';help.setAttribute('aria-label',lang==='zh'?'新手教程':'Tutorial')}showPage('home')}
+function skipOnboarding(){closeExpenseModal(true);finishOnboarding()}
+function restartOnboarding(){closeExpenseModal(true);onboardingStage='language';renderOnboarding()}
+function startOnboardingIfNeeded(){const help=$('#tutorialHelp');if(help)help.setAttribute('aria-label',lang==='zh'?'新手教程':'Tutorial');if(store.get(ONBOARDING_KEY)!=='done'){onboardingStage='language';renderOnboarding()}}
+
+'''
 BOOT_AND_DOCUMENT_END = r'''/* ───── boot ───── */
 ledger=loadLocalLedger();
 try{const savedLoc=JSON.parse(store.get('chengduLastLocation')||'null');if(savedLoc&&Number.isFinite(savedLoc.lat)&&Number.isFinite(savedLoc.lon)&&Number.isFinite(savedLoc.ts)&&Date.now()-savedLoc.ts<=LOCATION_MAX_AGE){userLocation=savedLoc;locationTimestamp=savedLoc.ts;geoStatus='ready'}}catch(e){}
@@ -1392,7 +1516,7 @@ if(DATA.server_food){
   foodLoading=false;
   cleanFoodQueryParams();
 }
-prepareLanding();nav();renderHome();renderExpenses();showPage(DATA.initial_page||'home');fitFrame();loadWeather();loadFx();if(CLOUD)syncLedger().finally(setupExpenseRealtime);
+prepareLanding();nav();renderHome();renderExpenses();showPage(DATA.initial_page||'home');fitFrame();loadWeather();loadFx();startOnboardingIfNeeded();if(CLOUD)syncLedger().finally(setupExpenseRealtime);
 window.addEventListener('resize',()=>{fitFrame();sizeSwipe()});
 window.addEventListener('online',()=>{if(CLOUD)syncLedger()});
 setInterval(()=>{const g=$('#greet'),ge=$('#greetEn');if(g)g.textContent=greeting();if(ge)ge.textContent=greetingEN();if(currentPage==='home'&&swipeFlipped){const i=swipeDayIdx;renderSwipeStack(i);flipTopCard(true)}},60000);
@@ -1417,6 +1541,7 @@ def build_html(payload: str) -> str:
             SHARED_PAGES_CSS,
             FUNCTIONAL_PAGES_CSS,
             landing.CSS,
+            ONBOARDING_CSS,
             BODY_OPEN,
             landing.MARKUP,
             BODY_SHELL,
@@ -1426,6 +1551,7 @@ def build_html(payload: str) -> str:
             food.JAVASCRIPT,
             expenses.JAVASCRIPT,
             NAVIGATION_JAVASCRIPT,
+            ONBOARDING_JAVASCRIPT,
             landing.JAVASCRIPT,
             BOOT_AND_DOCUMENT_END,
         ]
