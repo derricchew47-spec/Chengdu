@@ -23,9 +23,10 @@ _ALLOWED_CATEGORIES = {
 _ALLOWED_RADII = {0.5, 1.0, 2.0, 5.0}
 
 _ENDPOINTS = (
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter",
     "https://overpass-api.de/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter",
-    "https://overpass.private.coffee/api/interpreter",
 )
 
 # Best-effort stale fallback shared within the current Streamlit process.
@@ -83,29 +84,27 @@ def _query_text(lat: float, lon: float, radius_km: float, category: str) -> str:
             f'{around};'
         )
 
-    return f"[out:json][timeout:25];({body});out center tags;"
+    return f"[out:json][timeout:18];({body});out center tags 160;"
 
 
 def _live_query(
     lat: float, lon: float, radius_km: float, category: str
 ) -> dict[str, Any]:
     query = _query_text(lat, lon, radius_km, category)
-    body = urlencode({"data": query}).encode("utf-8")
+    query_string = urlencode({"data": query})
     errors: list[str] = []
 
     for endpoint in _ENDPOINTS:
         try:
             req = Request(
-                endpoint,
-                data=body,
-                method="POST",
+                f"{endpoint}?{query_string}",
+                method="GET",
                 headers={
-                    "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
                     "User-Agent": "OurChengduStory/1.0 (private family travel app)",
                     "Accept": "application/json",
                 },
             )
-            with urlopen(req, timeout=15) as response:
+            with urlopen(req, timeout=12) as response:
                 if response.status != 200:
                     raise RuntimeError(f"HTTP {response.status}")
                 payload = json.loads(response.read().decode("utf-8"))

@@ -1121,9 +1121,9 @@ const I18N={
   nav_home:'首页',nav_food:'美食',nav_expenses:'花费',switch_lang:'切换为英文',
   morning:'早上好，',afternoon:'下午好，',evening:'晚上好，',home_line:'和家人，一起看更大的世界。',hero_1:'成都，',hero_2:'刚刚好。',
   weather_loading:'天气更新中',sunny:'晴',partly:'晴间多云',cloudy:'多云',fog:'雾',rain:'有雨',snow:'有雪',showers:'阵雨',storm:'雷雨',chengdu:'成都',chongqing:'重庆',
-  food_title:'附近美食',food_sub:'我现在在这里，附近有什么值得吃？',search_food:'搜索附近店铺',range:'范围',retry:'重试',location_title:'需要当前位置',location_body:'点击后浏览器会请求一次定位，并将当前坐标发送给 OpenStreetMap Overpass 的公共主站或备用站，用来查询附近店铺；应用不会持续追踪。',locate:'获取当前位置',locating:'正在寻找你的位置…',location_denied:'定位权限未开启',location_denied_body:'请在浏览器设置中允许定位，然后再试一次。',location_insecure:'需要安全连接',location_insecure_body:'请使用 HTTPS，或在本机用 localhost / 127.0.0.1 打开后重试。',location_unavailable:'暂时无法获取位置',location_unavailable_body:'这通常不是因为你不在成都。请确认设备定位已开启，稍后重试。',nearby_services:'附近服务',opens_amap:'点击后自动打开高德',opening_amap:'正在打开高德…',popup_blocked:'浏览器阻止了新窗口，请允许弹出窗口后重试。',server_search_now:'搜索附近店铺',server_search_hint:'位置已准备好，点击查询附近店铺。',
+  food_title:'附近美食',food_sub:'我现在在这里，附近有什么值得吃？',search_food:'搜索附近店铺',range:'范围',retry:'重试',location_title:'需要当前位置',location_body:'点击后浏览器会请求一次定位，并将当前坐标发送给 OpenStreetMap Overpass 的公共主站或备用站，用来查询附近店铺；应用不会持续追踪。',locate:'获取当前位置',locating:'正在寻找你的位置…',location_denied:'定位权限未开启',location_denied_body:'请在浏览器设置中允许定位，然后再试一次。',location_insecure:'需要安全连接',location_insecure_body:'请使用 HTTPS，或在本机用 localhost / 127.0.0.1 打开后重试。',location_unavailable:'暂时无法获取位置',location_unavailable_body:'这通常不是因为你不在成都。请确认设备定位已开启，稍后重试。',nearby_services:'附近服务',opens_amap:'点击后自动打开高德',opening_amap:'正在打开高德…',popup_blocked:'浏览器阻止了新窗口，请允许弹出窗口后重试。',server_search_now:'搜索附近店铺',server_search_hint:'位置已准备好，点击查询附近店铺。',server_fallback:'改用服务器搜索',
   all:'全部',sichuan:'川菜',hotpot:'火锅',snacks:'小吃',noodles:'面食',coffee:'咖啡',dessert:'甜品',more:'更多',
-  nothing_food:'附近还没找到合适的店。',wider:'换个距离再看看。',service_down:'附近搜索暂时不可用。',cached:'正在显示上次缓存的结果。',smart_score:'推荐分',limited:'数据有限',high_conf:'高可信',open:'营业中',hours_listed:'有营业时间资料',walk:'步行约 {n} 分钟',
+  nothing_food:'附近还没找到合适的店。',wider:'换个距离再看看。',service_down:'公共地图服务繁忙，可重试或改用服务器搜索。',cached:'正在显示上次缓存的结果。',smart_score:'推荐分',limited:'数据有限',high_conf:'高可信',open:'营业中',hours_listed:'有营业时间资料',walk:'步行约 {n} 分钟',
   more_recommendations:'更多推荐',sorted_by_score:'按推荐排序',food_categories:'食物类别',category_unknown:'类别资料有限',no_hours:'暂无营业时间资料',hours:'营业时间',data_source:'资料来源',data_status:'数据状态',osm_notice:'资料来自 OpenStreetMap，可能不包含最新菜单、价格或完整营业时间，建议到店前再确认。',open_amap:'在高德地图中打开',
   tag_hotpot:'火锅',tag_sichuan:'川菜',tag_chinese:'中餐',tag_noodles:'面食',tag_seafood:'海鲜',tag_bbq:'烧烤',tag_curry:'咖喱',tag_malaysian:'马来西亚菜',tag_southeast_asian:'东南亚菜',tag_thai:'泰国菜',tag_vietnamese:'越南菜',tag_japanese:'日料',tag_korean:'韩餐',tag_western:'西餐',tag_burger:'汉堡',tag_pizza:'披萨',tag_fastfood:'快餐',tag_dessert:'甜品',tag_icecream:'冰淇淋',tag_coffee:'咖啡',tag_tea:'茶饮',tag_bakery:'烘焙',tag_dimsum:'点心',tag_dumpling:'饺子',tag_vegetarian:'素食',tag_rice:'米饭类',tag_snacks:'小吃',
   food_detail:'店铺详情',category:'类别',distance:'距离',walking:'步行',status:'状态',price:'价格',unknown:'暂无资料',navigate:'高德导航',search_dp:'大众点评搜索',search_red:'小红书搜索',amap_nearby:'打开高德搜索附近',
@@ -1143,9 +1143,9 @@ const I18N={
   morning:'Good morning,',afternoon:'Good afternoon,',evening:'Good evening,',home_line:'See a bigger world, together as a family.',hero_1:'Chengdu.',hero_2:'Just right.',
   weather_loading:'Weather updating',sunny:'Sunny',partly:'Partly cloudy',cloudy:'Cloudy',fog:'Fog',rain:'Rain',snow:'Snow',showers:'Showers',storm:'Thunderstorms',chengdu:'Chengdu',chongqing:'Chongqing',
   food_title:'Nearby Food',food_sub:'What is worth eating near me right now?',search_food:'Search nearby places',range:'Distance',retry:'Retry',location_title:'Location needed',location_body:'Your browser will request location once and send the current coordinates to a primary or fallback public OpenStreetMap Overpass server to find nearby places. The app does not track continuously.',locate:'Use My Location',locating:'Finding your location…',location_denied:'Location permission is off',location_denied_body:'Allow location in your browser settings, then try again.',location_insecure:'Secure connection required',location_insecure_body:'Open the app over HTTPS, or use localhost / 127.0.0.1 when running it locally.',location_unavailable:'Location is temporarily unavailable',location_unavailable_body:'This is not caused by being outside Chengdu. Check that device location is on, then try again.',nearby_services:'Nearby Services',opens_amap:'Tap to open AMap automatically',opening_amap:'Opening AMap…',popup_blocked:'Your browser blocked the new window. Allow pop-ups and try again.',
-  server_search_now:'Search nearby places',server_search_hint:'Location ready. Tap to search nearby places.',
+  server_search_now:'Search nearby places',server_search_hint:'Location ready. Tap to search nearby places.',server_fallback:'Try server search',
   all:'All',sichuan:'Sichuan',hotpot:'Hot Pot',snacks:'Snacks',noodles:'Noodles',coffee:'Coffee',dessert:'Dessert',more:'More',
-  nothing_food:'Nothing suitable nearby yet.',wider:'Try a wider radius.',service_down:'Nearby search is temporarily unavailable.',cached:'Showing the last cached results.',smart_score:'Smart Score',limited:'Limited data',high_conf:'High confidence',open:'Open',hours_listed:'Hours available',walk:'~{n} min walk',
+  nothing_food:'Nothing suitable nearby yet.',wider:'Try a wider radius.',service_down:'The public map service is busy. Retry or use server search.',cached:'Showing the last cached results.',smart_score:'Smart Score',limited:'Limited data',high_conf:'High confidence',open:'Open',hours_listed:'Hours available',walk:'~{n} min walk',
   more_recommendations:'More recommendations',sorted_by_score:'Recommended first',food_categories:'Food categories',category_unknown:'Limited category data',no_hours:'No hours data',hours:'Opening hours',data_source:'Data source',data_status:'Data status',osm_notice:'Data comes from OpenStreetMap and may not include the latest menu, prices, or complete opening hours. Please confirm before visiting.',open_amap:'Open in AMap',
   tag_hotpot:'Hot Pot',tag_sichuan:'Sichuan',tag_chinese:'Chinese',tag_noodles:'Noodles',tag_seafood:'Seafood',tag_bbq:'Barbecue',tag_curry:'Curry',tag_malaysian:'Malaysian',tag_southeast_asian:'Southeast Asian',tag_thai:'Thai',tag_vietnamese:'Vietnamese',tag_japanese:'Japanese',tag_korean:'Korean',tag_western:'Western',tag_burger:'Burgers',tag_pizza:'Pizza',tag_fastfood:'Fast Food',tag_dessert:'Dessert',tag_icecream:'Ice Cream',tag_coffee:'Coffee',tag_tea:'Tea',tag_bakery:'Bakery',tag_dimsum:'Dim Sum',tag_dumpling:'Dumplings',tag_vegetarian:'Vegetarian',tag_rice:'Rice',tag_snacks:'Snacks',
   food_detail:'Place Details',category:'Category',distance:'Distance',walking:'Walking',status:'Status',price:'Price',unknown:'Not available',navigate:'Navigate',search_dp:'Search Dianping',search_red:'Search Xiaohongshu',amap_nearby:'Search Nearby in AMap',
@@ -1312,17 +1312,23 @@ async function requestServerFood(force=false,poolRadius=foodRadius){
   if(currentPage==='food')renderFood();
   if(foodRequestAbort)foodRequestAbort.abort();
   try{
-    const endpoints=['https://overpass-api.de/api/interpreter','https://overpass.private.coffee/api/interpreter'];
+    const endpoints=[
+      'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+      'https://overpass.private.coffee/api/interpreter',
+      'https://overpass-api.de/api/interpreter',
+      'https://overpass.kumi.systems/api/interpreter'
+    ];
     let elements=null,lastError=null;
     for(const endpoint of endpoints){
       const controller=new AbortController();foodRequestAbort=controller;
       let timer=0;
       try{
-        const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{controller.abort();reject(new Error('Overpass timeout'))},12000)});
-        const response=await Promise.race([fetch(endpoint,{
-          method:'POST',
-          headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
-          body:`data=${encodeURIComponent(foodQueryText('all',poolRadius))}`,
+        const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{controller.abort();reject(new Error('Overpass timeout'))},9000)});
+        const url=`${endpoint}?data=${encodeURIComponent(foodQueryText('all',poolRadius))}`;
+        const response=await Promise.race([fetch(url,{
+          method:'GET',
+          headers:{'Accept':'application/json'},
+          cache:'no-store',
           signal:controller.signal
         }),timeout]);
         if(!response.ok)throw new Error(`Overpass ${response.status}`);
@@ -1345,6 +1351,13 @@ async function requestServerFood(force=false,poolRadius=foodRadius){
   }finally{
     if(seq===foodRequestSeq){foodLoading=false;if(currentPage==='food')renderFood()}
   }
+}
+function openServerFoodFallback(){
+  if(!userLocation)return;
+  const href=foodServerUrl(true,Math.max(foodRadius,foodPoolRadius||0,2));
+  if(!href){toast(L('service_down'));return}
+  const opened=window.open(href,'_blank','noopener');
+  if(!opened)toast(L('popup_blocked'))
 }
 function requestLocation(source='food'){
   const redraw=()=>{if(currentPage==='food')renderFood()};
