@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """Server-side nearby-food pool lookup.
 
-The phone browser only obtains GPS coordinates. Overpass requests are made by
-the Streamlit/Python server, avoiding mobile-browser CORS/network differences.
+The phone browser only obtains GPS coordinates. Photon is queried first and
+public Overpass instances are retained as a fallback, avoiding dependence on a
+single provider and mobile-browser CORS/network differences.
 """
 
 from __future__ import annotations
@@ -21,6 +22,15 @@ _ALLOWED_CATEGORIES = {
     "all", "sichuan", "hotpot", "snacks", "noodles", "coffee", "dessert"
 }
 _ALLOWED_RADII = {0.5, 1.0, 2.0, 5.0}
+
+_PHOTON_ENDPOINT = "https://photon.komoot.io/reverse"
+_PHOTON_AMENITIES = (
+    "restaurant",
+    "fast_food",
+    "cafe",
+    "food_court",
+    "ice_cream",
+)
 
 _ENDPOINTS = (
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
@@ -87,12 +97,90 @@ def _query_text(lat: float, lon: float, radius_km: float, category: str) -> str:
     return f"[out:json][timeout:18];({body});out center tags 160;"
 
 
+def _photon_elements(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    """Convert Photon GeoJSON features to the OSM-like shape used by the UI."""
+
+    type_map = {"N": "node", "W": "way", "R": "relation"}
+    elements: list[dict[str, Any]] = []
+    for feature in payload.get("features") or []:
+        properties = feature.get("properties") or {}
+        coordinates = (feature.get("geometry") or {}).get("coordinates") or []
+        if len(coordinates) < 2:
+            continue
+        try:
+            lon, lat = float(coordinates[0]), float(coordinates[1])
+        except (TypeError, ValueError):
+            continue
+
+        tags = dict(properties.get("extra") or {})
+        name = properties.get("name")
+        if name:
+            tags["name"] = str(name)
+        if properties.get("osm_key") == "amenity" and properties.get("osm_value"):
+            tags["amenity"] = str(properties["osm_value"])
+        if properties.get("street"):
+            tags["addr:street"] = str(properties["street"])
+        if properties.get("housenumber"):
+            tags["addr:housenumber"] = str(properties["housenumber"])
+
+        elements.append(
+            {
+                "type": type_map.get(properties.get("osm_type"), "node"),
+                "id": properties.get("osm_id") or f"photon-{lat}-{lon}",
+                "lat": lat,
+                "lon": lon,
+                "tags": tags,
+            }
+        )
+    return elements
+
+
+def _photon_query(
+    lat: float, lon: float, radius_km: float
+) -> dict[str, Any]:
+    params: list[tuple[str, str]] = [
+        ("lon", str(lon)),
+        ("lat", str(lat)),
+        ("radius", str(radius_km)),
+        ("limit", "50"),
+    ]
+    params.extend(("osm_tag", f"amenity:{value}") for value in _PHOTON_AMENITIES)
+    req = Request(
+        f"{_PHOTON_ENDPOINT}?{urlencode(params)}",
+        method="GET",
+        headers={
+            "User-Agent": "OurChengduStory/1.0 (private family travel app)",
+            "Accept": "application/json",
+        },
+    )
+    with urlopen(req, timeout=15) as response:
+        if response.status != 200:
+            raise RuntimeError(f"HTTP {response.status}")
+        payload = json.loads(response.read().decode("utf-8"))
+    return {
+        "ok": True,
+        "elements": _photon_elements(payload),
+        "source": "photon",
+        "endpoint": _PHOTON_ENDPOINT,
+        "fetched_at": int(time.time()),
+    }
+
+
 def _live_query(
     lat: float, lon: float, radius_km: float, category: str
 ) -> dict[str, Any]:
+    errors: list[str] = []
+    photon_empty: dict[str, Any] | None = None
+    try:
+        result = _photon_query(lat, lon, radius_km)
+        if result["elements"]:
+            return result
+        photon_empty = result
+    except Exception as exc:
+        errors.append(f"{_PHOTON_ENDPOINT}: {type(exc).__name__}")
+
     query = _query_text(lat, lon, radius_km, category)
     query_string = urlencode({"data": query})
-    errors: list[str] = []
 
     for endpoint in _ENDPOINTS:
         try:
@@ -119,6 +207,8 @@ def _live_query(
         except Exception as exc:  # try the next public endpoint
             errors.append(f"{endpoint}: {type(exc).__name__}")
 
+    if photon_empty is not None:
+        return photon_empty
     raise RuntimeError("; ".join(errors) or "All Overpass endpoints failed")
 
 

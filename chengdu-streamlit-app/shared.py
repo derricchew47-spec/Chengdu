@@ -1088,7 +1088,7 @@ BODY_SHELL = r'''
 '''
 ONBOARDING_CSS = r'''
 <style>
-.tutorial-help{position:fixed;z-index:190;top:max(15px,env(safe-area-inset-top));right:max(14px,calc((100vw - min(100vw,460px))/2 + 14px));width:34px;height:34px;border:1px solid rgba(45,106,75,.18);border-radius:50%;background:rgba(255,255,255,.92);color:#2d6a4b;font:700 16px/1 Georgia,serif;box-shadow:0 6px 18px rgba(29,71,51,.12);cursor:pointer}
+.tutorial-help{position:fixed;z-index:190;display:none;place-items:center;top:max(15px,env(safe-area-inset-top));right:max(14px,calc((100vw - min(100vw,460px))/2 + 14px));width:34px;height:34px;border:1px solid rgba(45,106,75,.18);border-radius:50%;background:rgba(255,255,255,.92);color:#2d6a4b;font:700 16px/1 Georgia,serif;box-shadow:0 6px 18px rgba(29,71,51,.12);cursor:pointer}
 .onboarding-layer{position:fixed;z-index:410;inset:0;display:none;align-items:flex-end;justify-content:center;padding:18px 14px calc(var(--nav-h) + env(safe-area-inset-bottom) + 12px);pointer-events:none}
 .onboarding-layer.active{display:flex}
 .onboarding-layer.center{align-items:center;padding-bottom:18px}
@@ -1121,7 +1121,7 @@ const I18N={
   nav_home:'首页',nav_food:'美食',nav_expenses:'花费',switch_lang:'切换为英文',
   morning:'早上好，',afternoon:'下午好，',evening:'晚上好，',home_line:'和家人，一起看更大的世界。',hero_1:'成都，',hero_2:'刚刚好。',
   weather_loading:'天气更新中',sunny:'晴',partly:'晴间多云',cloudy:'多云',fog:'雾',rain:'有雨',snow:'有雪',showers:'阵雨',storm:'雷雨',chengdu:'成都',chongqing:'重庆',
-  food_title:'附近美食',food_sub:'我现在在这里，附近有什么值得吃？',search_food:'搜索附近店铺',range:'范围',retry:'重试',location_title:'需要当前位置',location_body:'点击后浏览器会请求一次定位，并将当前坐标发送给 OpenStreetMap Overpass 的公共主站或备用站，用来查询附近店铺；应用不会持续追踪。',locate:'获取当前位置',locating:'正在寻找你的位置…',location_denied:'定位权限未开启',location_denied_body:'请在浏览器设置中允许定位，然后再试一次。',location_insecure:'需要安全连接',location_insecure_body:'请使用 HTTPS，或在本机用 localhost / 127.0.0.1 打开后重试。',location_unavailable:'暂时无法获取位置',location_unavailable_body:'这通常不是因为你不在成都。请确认设备定位已开启，稍后重试。',nearby_services:'附近服务',opens_amap:'点击后自动打开高德',opening_amap:'正在打开高德…',popup_blocked:'浏览器阻止了新窗口，请允许弹出窗口后重试。',server_search_now:'搜索附近店铺',server_search_hint:'位置已准备好，点击查询附近店铺。',server_fallback:'改用服务器搜索',
+  food_title:'附近美食',food_sub:'我现在在这里，附近有什么值得吃？',search_food:'搜索附近店铺',range:'范围',retry:'重试',location_title:'需要当前位置',location_body:'点击后浏览器会请求一次定位，并将当前坐标发送给 Photon；若失败才会改用公共 Overpass 服务查询附近店铺。应用不会持续追踪。',locate:'获取当前位置',locating:'正在寻找你的位置…',location_denied:'定位权限未开启',location_denied_body:'请在浏览器设置中允许定位，然后再试一次。',location_insecure:'需要安全连接',location_insecure_body:'请使用 HTTPS，或在本机用 localhost / 127.0.0.1 打开后重试。',location_unavailable:'暂时无法获取位置',location_unavailable_body:'这通常不是因为你不在成都。请确认设备定位已开启，稍后重试。',nearby_services:'附近服务',opens_amap:'点击后自动打开高德',opening_amap:'正在打开高德…',popup_blocked:'浏览器阻止了新窗口，请允许弹出窗口后重试。',server_search_now:'搜索附近店铺',server_search_hint:'位置已准备好，点击查询附近店铺。',server_fallback:'改用服务器搜索',
   all:'全部',sichuan:'川菜',hotpot:'火锅',snacks:'小吃',noodles:'面食',coffee:'咖啡',dessert:'甜品',more:'更多',
   nothing_food:'附近还没找到合适的店。',wider:'换个距离再看看。',service_down:'公共地图服务繁忙，可重试或改用服务器搜索。',cached:'正在显示上次缓存的结果。',smart_score:'推荐分',limited:'数据有限',high_conf:'高可信',open:'营业中',hours_listed:'有营业时间资料',walk:'步行约 {n} 分钟',
   more_recommendations:'更多推荐',sorted_by_score:'按推荐排序',food_categories:'食物类别',category_unknown:'类别资料有限',no_hours:'暂无营业时间资料',hours:'营业时间',data_source:'资料来源',data_status:'数据状态',osm_notice:'资料来自 OpenStreetMap，可能不包含最新菜单、价格或完整营业时间，建议到店前再确认。',open_amap:'在高德地图中打开',
@@ -1142,7 +1142,7 @@ const I18N={
   nav_home:'Home',nav_food:'Food',nav_expenses:'Expenses',switch_lang:'Switch to Chinese',
   morning:'Good morning,',afternoon:'Good afternoon,',evening:'Good evening,',home_line:'See a bigger world, together as a family.',hero_1:'Chengdu.',hero_2:'Just right.',
   weather_loading:'Weather updating',sunny:'Sunny',partly:'Partly cloudy',cloudy:'Cloudy',fog:'Fog',rain:'Rain',snow:'Snow',showers:'Showers',storm:'Thunderstorms',chengdu:'Chengdu',chongqing:'Chongqing',
-  food_title:'Nearby Food',food_sub:'What is worth eating near me right now?',search_food:'Search nearby places',range:'Distance',retry:'Retry',location_title:'Location needed',location_body:'Your browser will request location once and send the current coordinates to a primary or fallback public OpenStreetMap Overpass server to find nearby places. The app does not track continuously.',locate:'Use My Location',locating:'Finding your location…',location_denied:'Location permission is off',location_denied_body:'Allow location in your browser settings, then try again.',location_insecure:'Secure connection required',location_insecure_body:'Open the app over HTTPS, or use localhost / 127.0.0.1 when running it locally.',location_unavailable:'Location is temporarily unavailable',location_unavailable_body:'This is not caused by being outside Chengdu. Check that device location is on, then try again.',nearby_services:'Nearby Services',opens_amap:'Tap to open AMap automatically',opening_amap:'Opening AMap…',popup_blocked:'Your browser blocked the new window. Allow pop-ups and try again.',
+  food_title:'Nearby Food',food_sub:'What is worth eating near me right now?',search_food:'Search nearby places',range:'Distance',retry:'Retry',location_title:'Location needed',location_body:'Your browser will request location once and send the current coordinates to Photon. Public Overpass servers are used only as fallback to find nearby places. The app does not track continuously.',locate:'Use My Location',locating:'Finding your location…',location_denied:'Location permission is off',location_denied_body:'Allow location in your browser settings, then try again.',location_insecure:'Secure connection required',location_insecure_body:'Open the app over HTTPS, or use localhost / 127.0.0.1 when running it locally.',location_unavailable:'Location is temporarily unavailable',location_unavailable_body:'This is not caused by being outside Chengdu. Check that device location is on, then try again.',nearby_services:'Nearby Services',opens_amap:'Tap to open AMap automatically',opening_amap:'Opening AMap…',popup_blocked:'Your browser blocked the new window. Allow pop-ups and try again.',
   server_search_now:'Search nearby places',server_search_hint:'Location ready. Tap to search nearby places.',server_fallback:'Try server search',
   all:'All',sichuan:'Sichuan',hotpot:'Hot Pot',snacks:'Snacks',noodles:'Noodles',coffee:'Coffee',dessert:'Dessert',more:'More',
   nothing_food:'Nothing suitable nearby yet.',wider:'Try a wider radius.',service_down:'The public map service is busy. Retry or use server search.',cached:'Showing the last cached results.',smart_score:'Smart Score',limited:'Limited data',high_conf:'High confidence',open:'Open',hours_listed:'Hours available',walk:'~{n} min walk',
@@ -1300,6 +1300,26 @@ function foodServerUrl(force=false,poolRadius=foodRadius){
   else u.searchParams.delete('food_refresh');
   return u.toString()
 }
+function photonFoodUrl(poolRadius){
+  const u=new URL('https://photon.komoot.io/reverse');
+  u.searchParams.set('lon',Number(userLocation.lon).toFixed(6));
+  u.searchParams.set('lat',Number(userLocation.lat).toFixed(6));
+  u.searchParams.set('radius',String(poolRadius));
+  u.searchParams.set('limit','50');
+  ['restaurant','fast_food','cafe','food_court','ice_cream'].forEach(v=>u.searchParams.append('osm_tag',`amenity:${v}`));
+  return u.toString()
+}
+function photonFoodElements(payload){
+  const typeMap={N:'node',W:'way',R:'relation'};
+  return(Array.isArray(payload?.features)?payload.features:[]).map(f=>{
+    const p=f.properties||{},coords=f.geometry?.coordinates||[],extra=p.extra||{};
+    if(!Number.isFinite(+coords[0])||!Number.isFinite(+coords[1]))return null;
+    const tags={...extra,name:p.name||'',amenity:p.osm_key==='amenity'?(p.osm_value||'restaurant'):(p.osm_value||'restaurant')};
+    if(p.street)tags['addr:street']=p.street;
+    if(p.housenumber)tags['addr:housenumber']=p.housenumber;
+    return{type:typeMap[p.osm_type]||'node',id:p.osm_id||`${coords[1]}:${coords[0]}`,lat:+coords[1],lon:+coords[0],tags}
+  }).filter(Boolean)
+}
 async function requestServerFood(force=false,poolRadius=foodRadius){
   if(!userLocation)return;
   poolRadius=Math.max(.5,Math.min(5,Number(poolRadius)||2));
@@ -1312,14 +1332,26 @@ async function requestServerFood(force=false,poolRadius=foodRadius){
   if(currentPage==='food')renderFood();
   if(foodRequestAbort)foodRequestAbort.abort();
   try{
+    let elements=null,lastError=null,photonEmpty=false;
+    {
+      const controller=new AbortController();foodRequestAbort=controller;
+      let timer=0;
+      try{
+        const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{controller.abort();reject(new Error('Photon timeout'))},15000)});
+        const response=await Promise.race([fetch(photonFoodUrl(poolRadius),{method:'GET',headers:{'Accept':'application/json'},cache:'no-store',signal:controller.signal}),timeout]);
+        if(!response.ok)throw new Error(`Photon ${response.status}`);
+        const data=await Promise.race([response.json(),timeout]);
+        elements=photonFoodElements(data);photonEmpty=!elements.length
+      }catch(error){lastError=error;elements=null}
+      finally{clearTimeout(timer)}
+    }
     const endpoints=[
       'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
       'https://overpass.private.coffee/api/interpreter',
       'https://overpass-api.de/api/interpreter',
       'https://overpass.kumi.systems/api/interpreter'
     ];
-    let elements=null,lastError=null;
-    for(const endpoint of endpoints){
+    for(const endpoint of elements===null?endpoints:[]){
       const controller=new AbortController();foodRequestAbort=controller;
       let timer=0;
       try{
@@ -1338,6 +1370,7 @@ async function requestServerFood(force=false,poolRadius=foodRadius){
       }catch(error){lastError=error}
       finally{clearTimeout(timer)}
     }
+    if(elements===null&&photonEmpty)elements=[];
     if(elements===null)throw lastError||new Error('Overpass unavailable');
     if(seq!==foodRequestSeq)return;
     cacheWrite(key,elements);foodPoolRadius=poolRadius;
@@ -1405,7 +1438,7 @@ function requestLocation(source='food'){
 function cleanFoodQueryParams(){}
 function osmPhoto(t){if(t.image&&/^https?:/i.test(t.image))return t.image;if(t.wikimedia_commons){const f=t.wikimedia_commons.replace(/^File:/,'');return`https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(f)}?width=800`}return''}
 function osmName(t){return t[lang==='zh'?'name:zh':'name:en']||t.name||t['name:zh']||t['name:en']||L('unknown')}
-function foodCategoryOf(t){const c=(t.cuisine||'').toLowerCase(),a=t.amenity||'';if(a==='cafe')return'coffee';if(a==='ice_cream'||/dessert|ice_cream|cake/.test(c))return'dessert';if(/hot_pot|hotpot/.test(c))return'hotpot';if(/noodle|ramen/.test(c))return'noodles';if(a==='fast_food'||a==='food_court')return'snacks';if(/sichuan|chinese/.test(c))return'sichuan';return'more'}
+function foodCategoryOf(t){const c=(t.cuisine||'').toLowerCase(),a=t.amenity||'',n=(t.name||'').toLowerCase();if(a==='cafe'||/咖啡|coffee|cafe|星巴克|喜茶|茶饮/.test(n))return'coffee';if(a==='ice_cream'||/dessert|ice_cream|cake/.test(c)||/甜品|冰淇淋|蛋糕|面包|dessert|ice.?cream|bakery/.test(n))return'dessert';if(/hot_pot|hotpot/.test(c)||/火锅|hot.?pot/.test(n))return'hotpot';if(/noodle|ramen/.test(c)||/面馆|面庄|拉面|小面|noodle|ramen/.test(n))return'noodles';if(a==='fast_food'||a==='food_court')return'snacks';if(/sichuan|chinese/.test(c)||/川菜|川味|家常菜/.test(n))return'sichuan';return'more'}
 function foodLabel(k){return L(k)}
 function smartScore(p){const r=parseFloat(p.tags.rating||p.tags['rating:google']||0),reviews=parseInt(p.tags.review_count||p.tags['reviews']||0,10),evidence=Number.isFinite(r)&&r>0;let s=50+Math.max(0,10-Math.round(p.distance/300));if(p.tags.opening_hours)s+=4;if(p.tags.website||p.tags.phone||p.tags['contact:phone'])s+=4;if(p.tags.cuisine)s+=3;if(p.photo)s+=2;if(evidence)s+=Math.round(Math.min(5,r)*5)+(reviews>=20?5:reviews>=5?2:0);p.hasRatingEvidence=evidence;p.reviewEvidence=reviews;return Math.max(50,Math.min(evidence?94:76,s))}
 function normalizePois(elements,kind){return elements.map(e=>{const t=e.tags||{},lat=e.lat??e.center?.lat,lon=e.lon??e.center?.lon;if(lat==null||lon==null)return null;const name=osmName(t),p={id:String(e.type)+e.id,lat,lon,tags:t,name,photo:osmPhoto(t),distance:userLocation?distanceM(userLocation.lat,userLocation.lon,lat,lon):0};p.foodCat=foodCategoryOf(t);p.score=smartScore(p);p.walk=Math.max(1,Math.ceil(p.distance/78));p.status=t.opening_hours==='24/7'?L('open'):(t.opening_hours?L('hours_listed'):'');p.confidence=p.hasRatingEvidence&&p.reviewEvidence>=5?L('high_conf'):L('limited');return p}).filter(p=>p&&(kind!=='food'||p.name!==L('unknown'))).sort((a,b)=>kind==='food'?b.score-a.score:a.distance-b.distance)}
@@ -1420,6 +1453,7 @@ function nav(){
 function showPage(name,rerender=true){
   if(name==='food')expireLocationIfNeeded();
   currentPage=name;
+  const help=$('#tutorialHelp');if(help&&!onboardingStage)help.style.display=name==='expenses'?'grid':'none';
   $$('.page').forEach(p=>p.classList.toggle('active',p.id===name));
   $$('.nav-btn').forEach(b=>{
     const on=b.dataset.page===name;b.classList.toggle('active',on);
@@ -1449,7 +1483,7 @@ const ONBOARDING_COPY={
   member_existing:'从名单中找到自己',member_existing_body:'找到你的名字，按“这是我”。如果名单里没有你，请关闭后选择“新增自己”。',
   expense:'第二步：记录第一笔消费',expense_body:'输入金额，选择付款人和参与成员；默认“平均分”会自动计算每个人应承担的金额。',
   expense_form:'正在记录第一笔消费',expense_form_body:'填写金额和说明，确认付款人及参与成员，最后按“保存”。',
-  done:'准备完成',done_body:'以后每台设备打开同一个成都 App，新增成员或账单都会同步给家人。右上角的“?”可以随时重看教程。',
+  done:'准备完成',done_body:'以后每台设备打开同一个成都 App，新增成员或账单都会同步给家人。花费页面右上角的“?”可以随时重看教程。',
   next:'下一步',back:'上一步',start:'开始看看',skip:'暂时跳过',add_me:'新增自己',already:'我已在名单里',record:'记录第一笔',finish:'开始使用',close:'退出引导'
  },
  en:{
@@ -1463,7 +1497,7 @@ const ONBOARDING_COPY={
   member_existing:'Find yourself in the list',member_existing_body:'Find your name and tap “This is me”. If you are not listed, close this sheet and choose “Add myself”.',
   expense:'Step 2: Record your first expense',expense_body:'Enter the amount, payer, and participants. “Split equally” calculates everyone’s share automatically.',
   expense_form:'Recording your first expense',expense_form_body:'Enter an amount and note, confirm payer and participants, then tap Save.',
-  done:'You’re all set',done_body:'From now on, every device opening the same Chengdu App will share new members and expenses. Tap “?” anytime to replay this tour.',
+  done:'You’re all set',done_body:'From now on, every device opening the same Chengdu App will share new members and expenses. On the Expenses page, tap “?” anytime to replay this tour.',
   next:'Next',back:'Back',start:'Start tour',skip:'Skip for now',add_me:'Add myself',already:'I’m already listed',record:'Record first expense',finish:'Start using the app',close:'Exit tour'
  }
 };
