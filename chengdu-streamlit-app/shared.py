@@ -1196,6 +1196,48 @@ ONBOARDING_CSS = r'''
 .onboarding-coach{position:relative;width:min(94%,420px);margin:0 auto;border:1px solid rgba(45,106,75,.16);border-radius:18px;background:#fffdf7;padding:12px 14px;color:#234436;box-shadow:0 12px 35px rgba(20,55,39,.20);pointer-events:auto;animation:onboardDown .25s ease both}.onboarding-coach b{display:block;margin-bottom:3px;font-size:13px}.onboarding-coach span{display:block;color:#68776f;font-size:11px;line-height:1.5}.onboarding-coach button{position:absolute;right:9px;top:8px;width:28px;height:28px;border:0;border-radius:50%;background:#edf2ee;color:#345b48;cursor:pointer}
 @keyframes onboardUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}@keyframes onboardDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
 @media(min-width:461px){.onboarding-layer{left:50%;width:460px;transform:translateX(-50%)}}
+
+/* Floating app navigation: clears Streamlit controls and mobile browser chrome. */
+:root{
+  --nav-float-offset:max(clamp(52px,7dvh,66px),calc(env(safe-area-inset-bottom) + 26px));
+}
+.bottom-nav{
+  position:absolute!important;
+  left:12px!important;
+  right:12px!important;
+  bottom:var(--nav-float-offset)!important;
+  width:auto!important;
+  height:64px!important;
+  padding:6px 8px!important;
+  transform:none!important;
+  border:1px solid rgba(57,83,67,.13)!important;
+  border-radius:22px!important;
+  background:rgba(253,252,247,.94)!important;
+  box-shadow:0 12px 30px rgba(32,57,43,.16)!important;
+  backdrop-filter:blur(18px)!important;
+  -webkit-backdrop-filter:blur(18px)!important;
+}
+.bottom-nav .nav-btn{min-height:50px;border-radius:16px}
+.bottom-nav .nav-btn.active{background:rgba(226,237,226,.72)}
+.page,
+.app-page,
+#expenses.app-page{
+  padding-bottom:calc(var(--nav-h) + var(--nav-float-offset) + 26px)!important;
+}
+#expenses .expense-fab{
+  bottom:calc(var(--nav-h) + var(--nav-float-offset) + 14px)!important;
+}
+#expenses.active{
+  animation:none!important;
+  transform:none!important;
+}
+.toast{
+  bottom:calc(var(--nav-h) + var(--nav-float-offset) + 18px)!important;
+}
+@media(max-height:700px){
+  :root{--nav-float-offset:max(56px,calc(env(safe-area-inset-bottom) + 24px))}
+  .bottom-nav{height:60px!important}
+}
 </style>
 '''
 SCRIPT_CORE = r'''<script>
