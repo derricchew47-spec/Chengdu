@@ -1127,18 +1127,20 @@ button.settlement-person{appearance:none;color:inherit;cursor:pointer}
 .expense-detail-delete{font-size:9px}
 
 /* Settlement cards have enough vertical room for a genuinely readable scale. */
-#expenses .settlement-flow-board{gap:40px!important}
-#expenses .settlement-flow-sub{font-size:8.8px!important;line-height:1.25}
-#expenses .settlement-flow-col-title{font-size:12px}
-.lang-en #expenses .settlement-flow-col-title{font-size:10.8px}
-#expenses .settlement-flow-col-title span{font-size:8.5px}
-#expenses .settlement-person{min-height:64px;padding:8px}
-#expenses .settlement-flow-avatar{width:40px;height:40px}
-#expenses .settlement-person-copy b{font-size:12.2px;line-height:1.2}
-#expenses .settlement-person-copy small{font-size:9.4px;line-height:1.25;margin-top:4px}
-#expenses .settlement-person-copy small strong{font-size:10.2px}
-#expenses .settlement-receiver-amount{font-size:10.4px}
-#expenses .settlement-flow-hint{font-size:9.5px!important;line-height:1.35}
+#expenses .settlement-flow-board{gap:22px!important}
+#expenses .settlement-flow-sub{font-size:13px!important;line-height:1.3}
+#expenses .settlement-flow-col-title{font-size:17px}
+.lang-en #expenses .settlement-flow-col-title{font-size:15px}
+#expenses .settlement-flow-col-title span{font-size:12px;width:24px;height:24px}
+#expenses .settlement-person{min-height:90px;padding:10px;gap:9px}
+#expenses .settlement-flow-avatar{width:44px;height:44px}
+#expenses .settlement-person-copy b{font-size:18px;line-height:1.15}
+#expenses .settlement-person-copy small{font-size:14px;line-height:1.3;margin-top:6px}
+#expenses .settlement-person-copy small strong{font-size:15px}
+#expenses .settlement-person-chevron{font-size:19px}
+#expenses .settlement-receiver .settlement-person-copy small{color:#2d6a4b;font-weight:650}
+#expenses .settlement-receiver-amount{display:none}
+#expenses .settlement-flow-hint{font-size:14px!important;line-height:1.4;padding:10px 11px}
 
 @media(max-width:360px){
   #expenses .expense-focus-tab .tab-main{font-size:11px}
@@ -1147,13 +1149,13 @@ button.settlement-person{appearance:none;color:inherit;cursor:pointer}
   #expenses .expense-recent-main b{font-size:12px}
   #expenses .member-manage-btn-copy b{font-size:9.3px!important}
   .lang-en #expenses .member-manage-btn-copy b{font-size:8.6px!important}
-  #expenses .settlement-flow-col-title{font-size:11px}
-  #expenses .settlement-person{min-height:62px;padding:7px}
-  #expenses .settlement-flow-avatar{width:36px;height:36px}
-  #expenses .settlement-person-copy b{font-size:11.2px}
-  #expenses .settlement-person-copy small{font-size:8.8px}
-  #expenses .settlement-person-copy small strong{font-size:9.5px}
-  #expenses .settlement-receiver-amount{font-size:9.6px}
+  #expenses .settlement-flow-board{gap:18px!important}
+  #expenses .settlement-flow-col-title{font-size:15.5px}
+  #expenses .settlement-person{min-height:88px;padding:9px;gap:8px}
+  #expenses .settlement-flow-avatar{width:42px;height:42px}
+  #expenses .settlement-person-copy b{font-size:16.5px}
+  #expenses .settlement-person-copy small{font-size:13px}
+  #expenses .settlement-person-copy small strong{font-size:14px}
 }
 
 '''
