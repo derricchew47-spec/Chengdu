@@ -1127,7 +1127,7 @@ button.settlement-person{appearance:none;color:inherit;cursor:pointer}
 .expense-detail-delete{font-size:9px}
 
 /* Settlement cards have enough vertical room for a genuinely readable scale. */
-#expenses .settlement-flow-board{gap:22px!important}
+#expenses .settlement-flow-board{gap:36px!important}
 #expenses .settlement-flow-sub{font-size:13px!important;line-height:1.3}
 #expenses .settlement-flow-col-title{font-size:17px}
 .lang-en #expenses .settlement-flow-col-title{font-size:15px}
@@ -1149,7 +1149,7 @@ button.settlement-person{appearance:none;color:inherit;cursor:pointer}
   #expenses .expense-recent-main b{font-size:12px}
   #expenses .member-manage-btn-copy b{font-size:9.3px!important}
   .lang-en #expenses .member-manage-btn-copy b{font-size:8.6px!important}
-  #expenses .settlement-flow-board{gap:18px!important}
+  #expenses .settlement-flow-board{gap:30px!important}
   #expenses .settlement-flow-col-title{font-size:15.5px}
   #expenses .settlement-person{min-height:78px;padding:8px;gap:7px}
   #expenses .settlement-flow-avatar{width:40px;height:40px}
