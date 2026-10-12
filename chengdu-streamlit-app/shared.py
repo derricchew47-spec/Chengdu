@@ -1067,6 +1067,82 @@ button.settlement-person{appearance:none;color:inherit;cursor:pointer}
   .settlement-flow-board{gap:40px!important}
 }
 
+
+/* ───── Expenses v19 selective readability scale ─────
+   Increase text only where the current cards have room. Dense totals and the
+   settlement diagram stay deliberately compact so names, amounts, and lines
+   keep their approved geometry on narrow phones. */
+#expenses .expenses-hero-title p{font-size:10.5px;line-height:1.35}
+#expenses .expense-overview-label{font-size:17px}
+#expenses .expense-overview-fx{font-size:12px}
+#expenses .expense-metric small{font-size:9px;line-height:1.2}
+#expenses .expense-metric b{font-size:16.5px}
+
+#expenses .expense-focus-tab .tab-main{font-size:11.8px;line-height:1.1}
+.lang-en #expenses .expense-focus-tab .tab-main{font-size:10.2px;line-height:1.1}
+#expenses .expense-section-head h3{font-size:17px}
+#expenses .expense-section-link{font-size:9.5px}
+
+#expenses .member-balance-summary-copy b{font-size:12px}
+#expenses .member-balance-summary-copy small{font-size:8.6px}
+#expenses .member-morph-meta b,
+#expenses .member-balance-person b{font-size:9.8px}
+#expenses .member-morph-meta span,
+#expenses .member-balance-person span{font-size:10px}
+
+#expenses .expense-recent-main b{font-size:12.4px}
+#expenses .expense-recent-main small{font-size:8.7px;line-height:1.25}
+#expenses .expense-recent-money small{font-size:8.4px}
+#expenses .state-card h3{font-size:15px}
+#expenses .state-card p{font-size:9px}
+
+#expenses .member-manage-btn-copy b{font-size:9.8px!important}
+.lang-en #expenses .member-manage-btn-copy b{font-size:9px!important}
+#expenses .member-manage-btn-copy small{font-size:7.4px}
+
+#expenses .member-main b,
+#expenses .bill-main b{font-size:13px}
+#expenses .member-main small,
+#expenses .bill-main small{font-size:9.5px}
+#expenses .me-badge{font-size:8.8px}
+
+/* Sheets belong to Expenses but are mounted outside the page container. */
+.expense-sheet-panel .sheet-title h2{font-size:22px}
+.expense-sheet-panel .sheet-title p{font-size:11.5px;line-height:1.45}
+.expense-sheet-panel .field label{font-size:10.5px}
+.expense-sheet-panel .field input,
+.expense-sheet-panel .field select{font-size:13px}
+.expense-sheet-panel .check-pill{font-size:11px}
+.expense-sheet-panel .split-line{font-size:11px}
+.expense-sheet-panel .validation{font-size:10px}
+.expense-sheet-panel .primary-btn{font-size:12px}
+.expense-sheet-panel .member-manage-copy b{font-size:12.2px}
+.expense-sheet-panel .member-manage-copy small{font-size:8.7px}
+.expense-sheet-panel .member-action{font-size:9px}
+
+.expense-detail-title h2{font-size:19.5px}
+.expense-detail-title small{font-size:9px}
+.expense-detail-item{font-size:10.2px}
+.expense-detail-primary{font-size:11px}
+.expense-detail-delete{font-size:9px}
+
+/* The connector board gets only a small lift to avoid changing line endpoints. */
+#expenses .settlement-flow-col-title{font-size:10.8px}
+.lang-en #expenses .settlement-flow-col-title{font-size:9.6px}
+#expenses .settlement-person-copy b{font-size:9.8px}
+#expenses .settlement-flow-hint{font-size:8.4px!important}
+
+@media(max-width:360px){
+  #expenses .expense-focus-tab .tab-main{font-size:11px}
+  .lang-en #expenses .expense-focus-tab .tab-main{font-size:9.5px}
+  #expenses .expense-section-link{font-size:9px}
+  #expenses .expense-recent-main b{font-size:12px}
+  #expenses .member-manage-btn-copy b{font-size:9.3px!important}
+  .lang-en #expenses .member-manage-btn-copy b{font-size:8.6px!important}
+  #expenses .settlement-flow-col-title{font-size:10.2px}
+  #expenses .settlement-person-copy b{font-size:9.4px}
+}
+
 '''
 BODY_OPEN = r'''
 </head>
@@ -1123,8 +1199,8 @@ const I18N={
   weather_loading:'天气更新中',sunny:'晴',partly:'晴间多云',cloudy:'多云',fog:'雾',rain:'有雨',snow:'有雪',showers:'阵雨',storm:'雷雨',chengdu:'成都',chongqing:'重庆',
   food_title:'附近美食',food_sub:'我现在在这里，附近有什么值得吃？',search_food:'搜索附近店铺',range:'范围',retry:'重试',location_title:'需要当前位置',location_body:'点击后浏览器会请求一次定位，并将当前坐标发送给 Photon；若失败才会改用公共 Overpass 服务查询附近店铺。应用不会持续追踪。',locate:'获取当前位置',locating:'正在寻找你的位置…',location_denied:'定位权限未开启',location_denied_body:'请在浏览器设置中允许定位，然后再试一次。',location_insecure:'需要安全连接',location_insecure_body:'请使用 HTTPS，或在本机用 localhost / 127.0.0.1 打开后重试。',location_unavailable:'暂时无法获取位置',location_unavailable_body:'这通常不是因为你不在成都。请确认设备定位已开启，稍后重试。',nearby_services:'附近服务',opens_amap:'点击后自动打开高德',opening_amap:'正在打开高德…',popup_blocked:'浏览器阻止了新窗口，请允许弹出窗口后重试。',server_search_now:'搜索附近店铺',server_search_hint:'位置已准备好，点击查询附近店铺。',server_fallback:'改用服务器搜索',
   all:'全部',sichuan:'川菜',hotpot:'火锅',snacks:'小吃',noodles:'面食',coffee:'咖啡',dessert:'甜品',more:'更多',
-  nothing_food:'附近还没找到合适的店。',wider:'换个距离再看看。',service_down:'公共地图服务繁忙，可重试或改用服务器搜索。',cached:'正在显示上次缓存的结果。',smart_score:'推荐分',limited:'数据有限',high_conf:'高可信',open:'营业中',hours_listed:'有营业时间资料',walk:'步行约 {n} 分钟',
-  more_recommendations:'更多推荐',sorted_by_score:'按推荐排序',food_categories:'食物类别',category_unknown:'类别资料有限',no_hours:'暂无营业时间资料',hours:'营业时间',data_source:'资料来源',data_status:'数据状态',osm_notice:'资料来自 OpenStreetMap，可能不包含最新菜单、价格或完整营业时间，建议到店前再确认。',open_amap:'在高德地图中打开',
+  nothing_food:'附近还没找到合适的店。',wider:'换个距离再看看。',service_down:'公共地图服务繁忙，可重试或改用服务器搜索。',cached:'正在显示上次缓存的结果。',smart_score:'推荐指数',amap_rating:'高德评分',no_public_rating:'暂无公开评分',amap_public_rating:'高德公开口碑',limited:'数据有限',high_conf:'高可信',open:'营业中',hours_listed:'有营业时间资料',walk:'步行约 {n} 分钟',
+  more_recommendations:'更多推荐',sorted_by_score:'按口碑推荐排序',food_categories:'食物类别',category_unknown:'类别资料有限',no_hours:'暂无营业时间资料',hours:'营业时间',data_source:'资料来源',data_status:'数据状态',amap_data:'高德地图',osm_data:'OpenStreetMap',amap_notice:'评分、人均消费和店铺资料来自高德地图；评分代表高德用户口碑，并非本 App 自行生成。资料可能随时间变化。',osm_notice:'资料来自 OpenStreetMap，暂无可靠公众口碑评分；推荐指数只参考距离和资料完整度。',open_amap:'在高德地图中打开',
   tag_hotpot:'火锅',tag_sichuan:'川菜',tag_chinese:'中餐',tag_noodles:'面食',tag_seafood:'海鲜',tag_bbq:'烧烤',tag_curry:'咖喱',tag_malaysian:'马来西亚菜',tag_southeast_asian:'东南亚菜',tag_thai:'泰国菜',tag_vietnamese:'越南菜',tag_japanese:'日料',tag_korean:'韩餐',tag_western:'西餐',tag_burger:'汉堡',tag_pizza:'披萨',tag_fastfood:'快餐',tag_dessert:'甜品',tag_icecream:'冰淇淋',tag_coffee:'咖啡',tag_tea:'茶饮',tag_bakery:'烘焙',tag_dimsum:'点心',tag_dumpling:'饺子',tag_vegetarian:'素食',tag_rice:'米饭类',tag_snacks:'小吃',
   food_detail:'店铺详情',category:'类别',distance:'距离',walking:'步行',status:'状态',price:'价格',unknown:'暂无资料',navigate:'高德导航',search_dp:'大众点评搜索',search_red:'小红书搜索',amap_nearby:'打开高德搜索附近',
   attractions:'景点',convenience:'便利店',toilets:'厕所',pharmacy:'药房',shopping_places:'商场',hotels:'酒店',food:'美食',nearby_loading:'正在查找附近地点…',
@@ -1145,8 +1221,8 @@ const I18N={
   food_title:'Nearby Food',food_sub:'What is worth eating near me right now?',search_food:'Search nearby places',range:'Distance',retry:'Retry',location_title:'Location needed',location_body:'Your browser will request location once and send the current coordinates to Photon. Public Overpass servers are used only as fallback to find nearby places. The app does not track continuously.',locate:'Use My Location',locating:'Finding your location…',location_denied:'Location permission is off',location_denied_body:'Allow location in your browser settings, then try again.',location_insecure:'Secure connection required',location_insecure_body:'Open the app over HTTPS, or use localhost / 127.0.0.1 when running it locally.',location_unavailable:'Location is temporarily unavailable',location_unavailable_body:'This is not caused by being outside Chengdu. Check that device location is on, then try again.',nearby_services:'Nearby Services',opens_amap:'Tap to open AMap automatically',opening_amap:'Opening AMap…',popup_blocked:'Your browser blocked the new window. Allow pop-ups and try again.',
   server_search_now:'Search nearby places',server_search_hint:'Location ready. Tap to search nearby places.',server_fallback:'Try server search',
   all:'All',sichuan:'Sichuan',hotpot:'Hot Pot',snacks:'Snacks',noodles:'Noodles',coffee:'Coffee',dessert:'Dessert',more:'More',
-  nothing_food:'Nothing suitable nearby yet.',wider:'Try a wider radius.',service_down:'The public map service is busy. Retry or use server search.',cached:'Showing the last cached results.',smart_score:'Smart Score',limited:'Limited data',high_conf:'High confidence',open:'Open',hours_listed:'Hours available',walk:'~{n} min walk',
-  more_recommendations:'More recommendations',sorted_by_score:'Recommended first',food_categories:'Food categories',category_unknown:'Limited category data',no_hours:'No hours data',hours:'Opening hours',data_source:'Data source',data_status:'Data status',osm_notice:'Data comes from OpenStreetMap and may not include the latest menu, prices, or complete opening hours. Please confirm before visiting.',open_amap:'Open in AMap',
+  nothing_food:'Nothing suitable nearby yet.',wider:'Try a wider radius.',service_down:'The public map service is busy. Retry or use server search.',cached:'Showing the last cached results.',smart_score:'Recommendation Index',amap_rating:'AMap Rating',no_public_rating:'No public rating',amap_public_rating:'AMap public rating',limited:'Limited data',high_conf:'High confidence',open:'Open',hours_listed:'Hours available',walk:'~{n} min walk',
+  more_recommendations:'More recommendations',sorted_by_score:'Ranked by public rating',food_categories:'Food categories',category_unknown:'Limited category data',no_hours:'No hours data',hours:'Opening hours',data_source:'Data source',data_status:'Data status',amap_data:'AMap',osm_data:'OpenStreetMap',amap_notice:'Ratings, average spend and place details come from AMap. The rating reflects AMap users and is not generated by this app. Details may change over time.',osm_notice:'Data comes from OpenStreetMap and has no reliable public rating. The recommendation index only considers distance and data completeness.',open_amap:'Open in AMap',
   tag_hotpot:'Hot Pot',tag_sichuan:'Sichuan',tag_chinese:'Chinese',tag_noodles:'Noodles',tag_seafood:'Seafood',tag_bbq:'Barbecue',tag_curry:'Curry',tag_malaysian:'Malaysian',tag_southeast_asian:'Southeast Asian',tag_thai:'Thai',tag_vietnamese:'Vietnamese',tag_japanese:'Japanese',tag_korean:'Korean',tag_western:'Western',tag_burger:'Burgers',tag_pizza:'Pizza',tag_fastfood:'Fast Food',tag_dessert:'Dessert',tag_icecream:'Ice Cream',tag_coffee:'Coffee',tag_tea:'Tea',tag_bakery:'Bakery',tag_dimsum:'Dim Sum',tag_dumpling:'Dumplings',tag_vegetarian:'Vegetarian',tag_rice:'Rice',tag_snacks:'Snacks',
   food_detail:'Place Details',category:'Category',distance:'Distance',walking:'Walking',status:'Status',price:'Price',unknown:'Not available',navigate:'Navigate',search_dp:'Search Dianping',search_red:'Search Xiaohongshu',amap_nearby:'Search Nearby in AMap',
   attractions:'Attractions',convenience:'Convenience',toilets:'Toilets',pharmacy:'Pharmacy',shopping_places:'Shopping',hotels:'Hotels',food:'Food',nearby_loading:'Finding nearby places…',
@@ -1193,7 +1269,7 @@ function toggleLang(){lang=lang==='zh'?'en':'zh';store.set('chengduLang',lang);a
 function applyLanguage(){
   document.documentElement.lang=lang==='zh'?'zh-CN':'en';
   document.body.classList.toggle('lang-en',lang==='en');
-  foodPois.forEach(p=>{p.name=osmName(p.tags);p.status=p.tags.opening_hours==='24/7'?L('open'):(p.tags.opening_hours?L('hours_listed'):'');p.confidence=p.hasRatingEvidence&&p.reviewEvidence>=5?L('high_conf'):L('limited')});
+  foodPois.forEach(p=>{p.name=osmName(p.tags);p.status=p.tags.opening_hours==='24/7'?L('open'):(p.tags.opening_hours?L('hours_listed'):'');p.confidence=p.dataSource==='amap'&&p.publicRating?L('amap_public_rating'):L('limited')});
   const keepDay=swipeDayIdx,keepFlip=swipeFlipped;renderHome(keepDay);if(keepFlip)flipTopCard(true);
   nav();renderLandingText();
   if(currentPage==='food')renderFood();
@@ -1440,8 +1516,28 @@ function osmPhoto(t){if(t.image&&/^https?:/i.test(t.image))return t.image;if(t.w
 function osmName(t){return t[lang==='zh'?'name:zh':'name:en']||t.name||t['name:zh']||t['name:en']||L('unknown')}
 function foodCategoryOf(t){const c=(t.cuisine||'').toLowerCase(),a=t.amenity||'',n=(t.name||'').toLowerCase();if(a==='cafe'||/咖啡|coffee|cafe|星巴克|喜茶|茶饮/.test(n))return'coffee';if(a==='ice_cream'||/dessert|ice_cream|cake/.test(c)||/甜品|冰淇淋|蛋糕|面包|dessert|ice.?cream|bakery/.test(n))return'dessert';if(/hot_pot|hotpot/.test(c)||/火锅|hot.?pot/.test(n))return'hotpot';if(/noodle|ramen/.test(c)||/面馆|面庄|拉面|小面|noodle|ramen/.test(n))return'noodles';if(a==='fast_food'||a==='food_court')return'snacks';if(/sichuan|chinese/.test(c)||/川菜|川味|家常菜/.test(n))return'sichuan';return'more'}
 function foodLabel(k){return L(k)}
-function smartScore(p){const r=parseFloat(p.tags.rating||p.tags['rating:google']||0),reviews=parseInt(p.tags.review_count||p.tags['reviews']||0,10),evidence=Number.isFinite(r)&&r>0;let s=50+Math.max(0,10-Math.round(p.distance/300));if(p.tags.opening_hours)s+=4;if(p.tags.website||p.tags.phone||p.tags['contact:phone'])s+=4;if(p.tags.cuisine)s+=3;if(p.photo)s+=2;if(evidence)s+=Math.round(Math.min(5,r)*5)+(reviews>=20?5:reviews>=5?2:0);p.hasRatingEvidence=evidence;p.reviewEvidence=reviews;return Math.max(50,Math.min(evidence?94:76,s))}
-function normalizePois(elements,kind){return elements.map(e=>{const t=e.tags||{},lat=e.lat??e.center?.lat,lon=e.lon??e.center?.lon;if(lat==null||lon==null)return null;const name=osmName(t),p={id:String(e.type)+e.id,lat,lon,tags:t,name,photo:osmPhoto(t),distance:userLocation?distanceM(userLocation.lat,userLocation.lon,lat,lon):0};p.foodCat=foodCategoryOf(t);p.score=smartScore(p);p.walk=Math.max(1,Math.ceil(p.distance/78));p.status=t.opening_hours==='24/7'?L('open'):(t.opening_hours?L('hours_listed'):'');p.confidence=p.hasRatingEvidence&&p.reviewEvidence>=5?L('high_conf'):L('limited');return p}).filter(p=>p&&(kind!=='food'||p.name!==L('unknown'))).sort((a,b)=>kind==='food'?b.score-a.score:a.distance-b.distance)}
+function smartScore(p){const r=parseFloat(p.tags.rating||p.tags['rating:google']||0),reviews=parseInt(p.tags.review_count||p.tags['reviews']||0,10),evidence=Number.isFinite(r)&&r>0;let s=50+Math.max(0,10-Math.round(p.distance/300));if(p.tags.opening_hours)s+=4;if(p.tags.website||p.tags.phone||p.tags['contact:phone'])s+=4;if(p.tags.cuisine)s+=3;if(p.photo)s+=2;if(evidence&&p.tags.data_source!=='amap')s+=Math.round(Math.min(5,r)*5)+(reviews>=20?5:reviews>=5?2:0);p.hasRatingEvidence=evidence;p.reviewEvidence=Number.isFinite(reviews)?reviews:0;return Math.max(50,Math.min(evidence?94:76,s))}
+function normalizePois(elements,kind){
+  const list=elements.map(e=>{
+    const t=e.tags||{},lat=e.lat??e.center?.lat,lon=e.lon??e.center?.lon;
+    if(lat==null||lon==null)return null;
+    const name=osmName(t),p={id:String(e.type)+e.id,lat,lon,tags:t,name,photo:osmPhoto(t),distance:userLocation?distanceM(userLocation.lat,userLocation.lon,lat,lon):0};
+    p.foodCat=foodCategoryOf(t);
+    p.dataSource=t.data_source==='amap'?'amap':'osm';
+    p.publicRating=parseFloat(t.rating||0);
+    if(!Number.isFinite(p.publicRating)||p.publicRating<=0)p.publicRating=0;
+    p.score=smartScore(p);
+    const rank=parseInt(t.amap_rank||99,10);
+    p.rankScore=p.publicRating?p.publicRating*100+Math.max(0,25-(Number.isFinite(rank)?rank:25))/100:p.score;
+    p.walk=Math.max(1,Math.ceil(p.distance/78));
+    p.status=t.opening_hours==='24/7'?L('open'):(t.opening_hours?L('hours_listed'):'');
+    p.confidence=p.dataSource==='amap'&&p.publicRating?L('amap_public_rating'):L('limited');
+    return p
+  }).filter(p=>p&&(kind!=='food'||p.name!==L('unknown')));
+  if(kind==='food')list.sort((a,b)=>(b.rankScore-a.rankScore)||(a.distance-b.distance));
+  else list.sort((a,b)=>a.distance-b.distance);
+  return list
+}
 
 '''
 NAVIGATION_JAVASCRIPT = r'''/* ───── Navigation ───── */
